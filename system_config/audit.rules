@@ -1,0 +1,114 @@
+# This file contains the auditctl rules that are loaded
+# whenever the audit daemon is started via the initscripts.
+# The rules are simply the parameters that would be passed
+# to auditctl.
+
+# #### -- ## Core Configuration for auditd behavior ## -- #####
+# First rule - delete all
+-D
+
+# Set  max number of outstanding audit buffers allowed (Kernel Default=64) 
+# If all buffers are full, the failure flag is consulted by
+# the kernel for action. Make this bigger for busy systems
+-b 16384
+
+# Set  failure  flag  0=silent  1=printk  2=panic. This option lets 
+# you determine how you want the kernel to handle critical errors.
+# Example conditions where this flag is consulted includes: transmission 
+# errors to userspace audit daemon, backlog  limit  exceeded,
+# out of kernel memory, and rate limit exceeded. 
+# The default value is 1.
+# 
+-f 1
+
+# Set  limit  in  messages/sec  (0=none).  If this rate is non-zero 
+# and is exceeded, the failure flag is consulted by the kernel for 
+# action. The default value is 0.  
+# -r RATEVAL
+
+# #### -- ## End Core Configuration for auditd behavior ## -- #####
+
+
+# #### -- ## Auditd Rules ## -- #####
+
+# NETWORK: network related system calls to gather socket data from 
+#  inbound and outbound traffic. 
+# start mod5
+-a always,exit -F arch=b64 -S bind -S connect -S accept -S accept4 -S listen -S socketpair -S socket -k SYS_NET
+# end mod5
+
+# MISC OS:
+#
+#  init_module - Initialize a loadable module entry
+#  delete_module - Delete a loadable module
+#  pivot_root - change the root file system
+#  
+# start mod4
+-a always,exit -F arch=b64 -S init_module -S delete_module -S mount -S pivot_root -S chroot -S mknod -k SYS_OS
+# end mod4
+
+# FILES: - Changes in ownership and permissions.  
+#
+#   mknodat - create a special or ordinary file relative to a directory file descriptor
+#   linkat - create a file link relative to directory file descriptors
+#   
+# start mod2
+-a always,exit -F arch=b64 -S creat -S mkdir -S mknod -S link -S symlink -S mknodat -S linkat -S symlinkat -F exit=-EACCES -k SYS_FILE_CREATE
+-a always,exit -F arch=b64 -S mkdir -S mkdirat -S link -S symlink -F exit=-EPERM -k SYS_FILE_CREATE
+#
+# unsuccessful open
+-a always,exit -F arch=b64 -S open -S openat -F exit=-EACCES -k SYS_FILE_OPEN
+-a always,exit -F arch=b64 -S open -S openat -F exit=-EPERM -k SYS_FILE_OPEN
+# unsuccessful modifications
+-a always,exit -F arch=b64 -S rename -S renameat -S truncate -S chmod -F exit=-EACCES -k SYS_FILE_MOD_FAIL
+-a always,exit -F arch=b64 -S rename -S renameat -S truncate -S chmod -F exit=-EPERM -k SYS_FILE_MOD_FAIL
+# all chmods/chown, successful or otherwise
+-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -k SYS_FILE_PERM
+-a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -k SYS_FILE_PERM
+# very special hello for the extended attribute set
+-a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -k SYS_FILE_XPERM
+# unsuccessful deletion
+-a always,exit -F arch=b64 -S rmdir -S unlink -S unlinkat -F exit=-EACCES -k SYS_FILE_DELETE_FAIL
+-a always,exit -F arch=b64 -S rmdir -S unlink -S unlinkat -F exit=-EPERM -k SYS_FILE_DELETE_FAIL
+# end mod2
+
+# start mod3
+# EXECUTIN: anything that gets executed should get logged
+-a always,exit -F arch=b64 -S execve -k SYS_EXEC
+# suid invocation
+-a always,exit -F arch=b64 -S setuid -S setgid -S setreuid -S setregid -k SYS_SUID
+# TIME:
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -S clock_settime -k SYS_TIME
+# end mod3 
+
+# start mod1
+# FILE SYSTEM MODS:
+# pam configuration
+-w /etc/pam.d/ -p wa -k CFG_PAM
+-w /etc/security/access.conf -p wa  -k CFG_PAM
+-w /etc/security/limits.conf -p wa  -k CFG_PAM
+-w /etc/security/pam_env.conf -p wa -k CFG_PAM
+-w /etc/security/namespace.conf -p wa -k CFG_PAM
+-w /etc/security/namespace.d/ -p wa -k CFG_PAM
+-w /etc/security/namespace.init -p wa -k CFG_PAM
+-w /etc/security/sepermit.conf -p wa -k CFG_PAM
+-w /etc/security/time.conf -p wa -k CFG_PAM
+#
+## system type directory (s)
+-w /etc -p w -k SYS_FILE
+-w /usr/bin -p w -k SYS_FILE
+-w /usr/sbin -p w -k SYS_FILE
+-w /lib -p w -k SYS_FILE
+-w /opt -p w -k SYS_FILE
+
+# track auditd mods
+# Set a watch on an audit configuration file. 
+# Log all write and attribute change attempts to this file. 
+-w /etc/audit/auditd.conf -p wa -k SYS_AUDITD
+-w /etc/audit/audit.rules -p wa -k SYS_AUDITD
+-w /etc/libaudit.conf -p wa -k SYS_AUDITD
+-w /etc/sysconfig/auditd -p wa -k SYS_AUDITD
+# end mod1
+
+# #### -- ## End Auditd Rules ## -- #####
+
