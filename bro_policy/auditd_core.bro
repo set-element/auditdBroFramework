@@ -19,8 +19,8 @@ export {
 	# AUDITD_CORE log stream identifier
 	redef enum Log::ID += { LOG };
 
-	const id_default = "-1";
-	const info_null  = "NULL";
+	const ID_DEFAULT = "-1";
+	const INFO_NULL  = "NULL";
 
 	# Used to keep track of the assigned *id/*gid values for a per host session identity.
 	#   This is the description of the who in an auditable event.  It needs to be stored
@@ -31,20 +31,19 @@ export {
 	#   / alpha record.
 	#
 	type identity: record {
-		ses:       int &default=-1;             # numeric session id or 'unset'
-		node:   string &default="NULL";         # what host is this happening on
-		whoami: string &default="NULL";         # index that this record is stored under
+		ses:       int &log &default=-1;             # numeric session id or 'unset'
+		node:   string &log &default="NULL";         # what host is this happening on
 		## -- identity info (process) --
-		auid:   string &default=s_default;	# audit id, immutable even if id changes
-		uid:    string &default=s_default;	# user id
-		gid:    string &default=s_default;	# group id
-		euid:   string &default=s_default;	# effective user id
-		egid:   string &default=s_default;	# effective group id
-		suid:   string &default=s_default;	# set user id
-		sgid:   string &default=s_default;	# set group id
+		auid:   string &log &default=ID_DEFAULT;	# audit id, immutable even if id changes
+		uid:    string &log &default=ID_DEFAULT;	# user id
+		gid:    string &log &default=ID_DEFAULT;	# group id
+		euid:   string &log &default=ID_DEFAULT;	# effective user id
+		egid:   string &log &default=ID_DEFAULT;	# effective group id
+		suid:   string &log &default=ID_DEFAULT;	# set user id
+		sgid:   string &log &default=ID_DEFAULT;	# set group id
 		## -- identity info (file system) --
-		fsuid:  string &default=s_default;	# file system user id
-		fsgid:  string &default=s_default;	# file system group id
+		fsuid:  string &log &default=ID_DEFAULT;	# file system user id
+		fsgid:  string &log &default=ID_DEFAULT;	# file system group id
 		};
 	
 
@@ -56,36 +55,38 @@ export {
 		## -- indexing information --
 		ts:        time   &log;				#
 		i:         identity &log;			# identity structure defined above
-		id:        string &log &default=info_null;	# identifier provided by key in getid()
+		index:     string &log &default=INFO_NULL;	# identifier provided by key in getid()
+		node:      string &log &default=INFO_NULL;	# what host is this happening on
 		pid:       int    &log &default=-1;		# curent pid
+		ses:       int    &log &default=-1;		# numeric session id or 'unset'
 
 		## -- class info --
-		action:    string &log &default=info_null;	# class of action (ex: 'SYSCALL_OBJ'), also ERROR_FLAG
-		key:       string &log &default=info_null;	# subtype of class (ex: 'SYS_NET')
+		action:    string &log &default=INFO_NULL;	# class of action (ex: 'SYSCALL_OBJ'), also ERROR_FLAG
+		key:       string &log &default=INFO_NULL;	# subtype of class (ex: 'SYS_NET')
 
 		## -- what happened --
-		syscall:   string &log &default=info_null;	# syscall name
-		comm:      string &log &default=info_null;	# name as appears in 'ps'
-		exe:       string &log &default=info_null;	# full exe name + path
+		syscall:   string &log &default=INFO_NULL;	# syscall name
+		comm:      string &log &default=INFO_NULL;	# name as appears in 'ps'
+		exe:       string &log &default=INFO_NULL;	# full exe name + path
 
 		## -- details --
-		msg:       string &log &default=info_null;
-		s_type:    string &log &default=info_null;	# name or file type socket
-		s_host:    string &log &default=info_null;	# *where* the socket type is pointing
-		s_serv:    string &log &default=info_null;	# service it is pointing to
-		path_name: string &log &default=info_null;	# gen 1x per path element passed to syscall
-		cwd:       string &log &default=info_null;	# current working direct at time of syscall
-		a0:        string &log &default=info_null;	# argument0 to syscall
-		a1:        string &log &default=info_null;	# ..
-		a2:        string &log &default=info_null;	# ..
-		arg_t:     string &log &default=info_null;	# for exec, *total* set of args
+		msg:       string &log &default=INFO_NULL;
+		s_type:    string &log &default=INFO_NULL;	# name or file type socket
+		s_host:    string &log &default=INFO_NULL;	# *where* the socket type is pointing
+		s_serv:    string &log &default=INFO_NULL;	# service it is pointing to
+		path_name: string &log &default=INFO_NULL;	# gen 1x per path element passed to syscall
+		cwd:       string &log &default=INFO_NULL;	# current working direct at time of syscall
+		a0:        string &log &default=INFO_NULL;	# argument0 to syscall
+		a1:        string &log &default=INFO_NULL;	# ..
+		a2:        string &log &default=INFO_NULL;	# ..
+		arg_t:     string &log &default=INFO_NULL;	# for exec, *total* set of args
 		ppid:      int    &log &default=-1; 		# parent pid
-		tty:       string &log &default=info_null; 	# tty type or NO_TTY
-		terminal:  string &log &default=info_null; 	# terminal data or NO_TERM
-		success:   string &log &default=info_null;	# if syscall succedded or not 
-		ext:       string &log &default=info_null;	# exit code for call
-		ouid:      string &log &default=info_null;	# uid on file system inode
-		ogid:      string &log &default=info_null;	# gid on file system inode
+		tty:       string &log &default=INFO_NULL; 	# tty type or NO_TTY
+		terminal:  string &log &default=INFO_NULL; 	# terminal data or NO_TERM
+		success:   string &log &default=INFO_NULL;	# if syscall succedded or not 
+		ext:       string &log &default=INFO_NULL;	# exit code for call
+		ouid:      string &log &default=INFO_NULL;	# uid on file system inode
+		ogid:      string &log &default=INFO_NULL;	# gid on file system inode
 		};
 
 	const zero_int: int = 0;	
@@ -99,9 +100,17 @@ export {
 
 	# exported functions
 	global get_action_id: function(index: string, node: string) : string;
-	global getrecord: function(index: string, pid: int, ses: int, node: string) : Info;
+	global get_identity_id: function(ses: int, node: string) : string;
+	global get_action_obj: function(index: string, node: string) : Info;
+	global get_identity_obj: function(ses: int, node: string) : identity;
+	global sync_identity: function(index: string, node: string) : Info;
+	global delete_action: function(index: string, node: string);
+	global string_test: function(s: string) : bool;
+	global int_test: function(i: int) : bool;
+	global time_test: function(t: time) : bool;
 	global last_record: function(index: string): count;
-	global update_value: function(i: Info);
+	global update_action: function(i: Info);
+	global update_identity: function(ses: int, node: string, auid: string, uid: string, gid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string, sgid: string) : count;
 
 	}
 
@@ -150,7 +159,7 @@ function get_action_obj(index: string, node: string) : Info
 {
 	local key = get_action_id(index,node);
 	local t_Info: Info;
-
+print fmt("index: %s key: %s", index, key);
 	# error state test - the action 
 	if ( key == "NULL" ) {
 		t_Info$action = "ERROR_STATE";
@@ -165,6 +174,7 @@ function get_action_obj(index: string, node: string) : Info
 	else {
 		# add the key instance
 		t_Info$node = node;
+		t_Info$index = index;
 		actionState[key] = t_Info;
 		}
 
@@ -211,7 +221,7 @@ function update_action(i: Info)
 		}
 }
 
-function sync_identity(index: string, node: string)
+function sync_identity(index: string, node: string) : Info
 {
 	# Take identity and sync it with the action structure
 	local t_Info = get_action_obj(index,node);
@@ -221,6 +231,8 @@ function sync_identity(index: string, node: string)
 
 	local key = get_action_id(t_Info$index,t_Info$node);
 	actionState[key] = t_Info;		
+
+	return t_Info;
 }
 
 function delete_action(index: string, node: string)
@@ -232,7 +244,46 @@ function delete_action(index: string, node: string)
 		delete actionState[key];
 }
 
-function update_identity(ses: int, node: string, auid: string, uid: string, gid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string) : count
+function string_test(s: string) : bool
+{
+	# Here we test for an error condition on the input framework conversion,
+	#   or a default value in the field (which could write over pre-existing
+	#   data.
+	local ret = T;
+
+	if ( (s == STRING_CONV_ERROR) || (s == ID_DEFAULT) || (s == INFO_NULL) )
+		ret = F;
+
+	return ret;
+}
+
+function int_test(i: int) : bool
+{
+	# Here we test for an error condition on the input framework conversion,
+	#   or a default value in the field (which could write over pre-existing
+	#   data.
+	local ret = T;
+
+	if ( (i == INT_CONV_ERROR) || (i == -1) )
+		ret = F;
+
+	return ret;
+}
+
+function time_test(t: time) : bool
+{
+	# Here we test for an error condition on the input framework conversion,
+	#   or a default value in the field (which could write over pre-existing
+	#   data.
+	local ret = T;
+
+	if ( t == TIME_CONV_ERROR )
+		ret = F;
+
+	return ret;
+}
+
+function update_identity(ses: int, node: string, auid: string, uid: string, gid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string, sgid: string) : count
 {
 	# Update values for the identity object.  If the obj is not in the
 	#   identityState table, create it
@@ -246,31 +297,37 @@ function update_identity(ses: int, node: string, auid: string, uid: string, gid:
 		t_identity = identityState[key];
 
 	# now update the values
-	if ( auid != STRING_CONV_ERROR )
+	if ( int_test(ses) )
+		t_identity$ses = ses;
+
+	if ( string_test(node) ) 
+		t_identity$node = node;
+	
+	if ( string_test(auid) )
 		t_identity$auid = auid;
 
-	if (  uid != STRING_CONV_ERROR )
+	if ( string_test(uid) )
 		t_identity$uid = uid;
 
-	if ( gid != STRING_CONV_ERROR )
+	if ( string_test(gid) )
 		t_identity$gid = gid;
 
-	if ( euid != STRING_CONV_ERROR )
+	if ( string_test(euid) )
 		t_identity$euid = euid;
 
-	if ( egid != STRING_CONV_ERROR )
+	if ( string_test(egid) )
 		t_identity$egid = egid;
 
-	if ( fsuid != STRING_CONV_ERROR )
+	if ( string_test(fsuid) )
 		t_identity$fsuid = fsuid;
 
-	if ( fsgid != STRING_CONV_ERROR )
+	if ( string_test(fsgid) )
 		t_identity$fsgid = fsgid;
 
-	if ( suid != STRING_CONV_ERROR )
+	if ( string_test(suid) )
 		t_identity$suid = suid;
 
-	if ( sgid != STRING_CONV_ERROR )
+	if ( string_test(sgid) )
 		t_identity$sgid = sgid;
 
 	identityState[key] = t_identity;
@@ -287,41 +344,29 @@ event auditd_execve(index: string, action: string, ts: time, node: string, ses: 
 	# Beta event
 	# look up the related record
 	local t_Info = get_action_obj(index,node);
-	local error_count = 0;
 
-	# for now just update the field values
-	# only update the action for some types
+	# update field values if they are not error or default values
 	
-	if ( action == STRING_CONV_ERROR ) 
-		++error_count;
-	else
+	if ( string_test(action) )
 		t_Info$action = action;
 	
-	if ( ts == TIME_CONV_ERROR )
-		++error_count;
-	else
+	if ( time_test(ts) )
 		t_Info$ts = ts;
 	
-	if ( ses == INT_CONV_ERROR )
-		++error_count;
-	else
+	if ( int_test(ses) )
 		t_Info$ses = ses;
 
-	if ( pid == INT_CONV_ERROR )
-		++error_count;
-	else	
+	if ( int_test(pid) )
 		t_Info$pid = pid;
 	
-	if ( argument == STRING_CONV_ERROR )
-		++error_count;
-	else
+	if ( string_test(argument) )
 		t_Info$arg_t = argument;
 
 	update_action(t_Info);
 
 	# if the last record, print it and clean up the action state
 	if ( last_record(index) == 1 ) {
-		t_Info = sync_identity(index,node, t_Info);
+		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
 		delete_action(index,node);
 		}
@@ -333,71 +378,105 @@ event auditd_generic(index: string, action: string, ts: time, node: string, ses:
 	{
 	# Alpha event
 	# look up the related record
-	local t_Info = get_info_record(index,node);
+	local t_Info = get_action_obj(index,node);
 
-	# for now just update the field values
-	# only update the action for some types
-	t_Info$action = action;
-	t_Info$ts = ts;
-	t_Info$ses = ses;
-	t_Info$pid = pid;
+	# update field values if they are not error or default values
 	#
-	t_Info$comm = comm;
-	t_Info$exe = exe;
-	t_Info$a0 = a0;
-	t_Info$a1 = a1;
-	t_Info$a2 = a2;
-	t_Info$ppid = ppid;
-	t_Info$tty = tty;
-	t_Info$terminal = terminal;
-	t_Info$success = success;
-	t_Info$ext = ext;
-	# identification
-	t_Info$uid = uid;
-	t_Info$gid = gid;
-	t_Info$auid = auid;
-	t_Info$euid = euid;
-	t_Info$egid = egid;
-	t_Info$suid = suid;
-	t_Info$sgid = sgid;
-	t_Info$fsuid = fsuid;
-	t_Info$fsgid = fsgid;
+	if ( string_test(index) )
+		t_Info$index = index;
 
-	update_value(t_Info);
+	if ( string_test(action) )
+		t_Info$action = action;
+	
+	if ( time_test(ts) )
+		t_Info$ts = ts;
+	
+	if ( int_test(ses) )
+		t_Info$ses = ses;
+
+	if ( int_test(pid) )
+		t_Info$pid = pid;
+
+	## ----- ##
+	
+	if ( string_test(comm) )
+		t_Info$comm = comm;
+
+	if ( string_test(exe) )
+		t_Info$exe = exe;
+
+	if ( string_test(a0) )
+		t_Info$a0 = a0;
+
+	if ( string_test(a1) )
+		t_Info$a1 = a1;
+
+	if ( string_test(a2) )
+		t_Info$a2 = a2;
+
+	if ( int_test(ppid) )
+		t_Info$ppid = ppid;
+
+	if ( string_test(tty) )
+		t_Info$tty = tty;
+
+	if ( string_test(terminal) )
+		t_Info$terminal = terminal;
+
+	if ( string_test(success) )
+		t_Info$success = success;
+
+	if ( string_test(ext) )
+		t_Info$ext = ext;
+
+	# identification
+	update_identity(ses, node, auid, uid, gid, euid, egid, fsuid, fsgid, suid, sgid);
+
+	update_action(t_Info);
 
 	# if the last record, print it
-	if ( last_record(index) == 1 )
+	if ( last_record(index) == 1 ) {
+		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
+		delete_action(index,node);
+		}
 
-	}
+	} # end auditd_generic event
 
 event auditd_place(index: string, action: string, ts: time, node: string, ses: int, pid: int, cwd: string, path_name: string, inode: int, mode: int, ouid: string, ogid: string)
 	{
+	# Beta event
 	# ouid/ogid: Refer to the UID and GID of the inode itself. 
 	#
 	# look up the related record
-	local t_Info = get_record(index,pid,ses,node);
+	local t_Info = get_action_obj(index,node);
 
-	# for now just update the field values
-	#  that are related to the current record
-	#
-	t_Info$cwd = cwd;
-	t_Info$path_name = path_name;
+	# update field values if they are not error or default values
+	if ( int_test(ses) )
+		t_Info$ses = ses;
 
-	# quick test to look at diff between oxid and xid
-	if ( ouid != t_Info$uid ) 	
-		print fmt("OUID ERROR ouid: %s uid: %s", ouid, t_Info$uid);
+	if ( string_test(cwd) )	
+		t_Info$cwd = cwd;
 
-	if ( ogid != t_Info$gid ) 	
-		print fmt("OGID ERROR ogid: %s gid: %s", ogid, t_Info$gid);
+	if ( string_test(path_name) )
+		t_Info$path_name = path_name;
 
-	update_value(t_Info);
+	if ( string_test(ouid) )
+		t_Info$ouid = ouid;
+
+	if ( string_test(ogid) )
+		t_Info$ogid = ogid;
+
+	update_action(t_Info);
 
 	# if the last record, print it
-	if ( last_record(index) == 1 ) 
+	if ( last_record(index) == 1 ) {
+		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
+		delete_action(index,node);
+		}
 
-	}
+	} # end event auditd_place
 
 event auditd_saddr(index: string, action: string, ts: time, node: string, ses: int, pid: int, saddr: string)
 	{
@@ -416,7 +495,7 @@ event auditd_saddr(index: string, action: string, ts: time, node: string, ses: i
 	# 	serv : {port} (optional) identifies what
 	#
 	
-	local t_Info = get_record(index,pid,ses,node);
+	local t_Info = get_action_obj(index,node);
 
 	# decode the saddr structure
 	local t_saddr = unescape_URI(saddr);
@@ -435,110 +514,171 @@ event auditd_saddr(index: string, action: string, ts: time, node: string, ses: i
 	# make decisions based on field 1
 	if ( stype == "inet" ) {
 
-		t_Info$s_type = stype;
-		t_Info$s_host = t_host[2];
-		t_Info$s_serv = t_serv[2];
+		if ( string_test(stype) )
+			t_Info$s_type = stype;
+
+		if ( string_test(t_host[2]) )
+			t_Info$s_host = t_host[2];
+
+		if ( string_test(t_serv[2]) )
+			t_Info$s_serv = t_serv[2];
 
 		}
 	else if ( stype == "local" ) {
-		
-		t_Info$s_type = stype;
-		t_Info$s_host = host;
+	
+		if ( string_test(stype) )	
+			t_Info$s_type = stype;
+
+		if ( string_test(host) )
+			t_Info$s_host = host;
 
 		} 
 	else if ( stype == "netlink" ) {
 
-		t_Info$s_type = stype;
-		t_Info$s_host = t_host[2];
+		if ( string_test(stype) )	
+			t_Info$s_type = stype;
+
+		if ( string_test(t_host[2]) )
+			t_Info$s_host = t_host[2];
 		
 		}
 
-	update_value(t_Info);
+	update_action(t_Info);
 
 	# if the last record, print it
-	if ( last_record(index) == 1 )
+	if ( last_record(index) == 1 ) {
+		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
-	}
+		delete_action(index,node);
+		}
+
+	} # end event auditd_saddr
 
 
 event auditd_syscall(index: string, action: string, ts: time, node: string, ses: int, pid: int, auid: string, syscall: string, key: string, comm: string, exe: string, a0: string, a1: string, a2: string, uid: string, gid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string, sgid: string, ppid: int, tty: string, success: string, ext: string)
 	{
 	# look up the related record
-	local t_Info = get_record(index,pid,ses,node);
+	local t_Info = get_action_obj(index,node);
 
-	# for now just update the field values
-	# only update the action for some types
-	t_Info$action = action;
-	t_Info$ts = ts;
-	t_Info$ses = ses;
-	t_Info$pid = pid;
+	# update field values if they are not error or default values
+	if ( string_test(index) )
+		t_Info$index = index;
+
+	if ( string_test(action) )
+		t_Info$action = action;
+
+	if ( time_test(ts) )
+		t_Info$ts = ts;	
+
+	if ( int_test(ses) )
+		t_Info$ses = ses;
+
+	if ( int_test(pid) )
+		t_Info$pid = pid;
 	#
-	t_Info$syscall = syscall;
-	t_Info$key = key;
-	t_Info$comm = comm;
-	t_Info$exe = exe;
-	t_Info$a0 = a0;
-	t_Info$a1 = a1;
-	t_Info$a2 = a2;
-	t_Info$ppid = ppid;
-	t_Info$tty = tty;
-	t_Info$success = success;
-	t_Info$ext = ext;
-	# identification
-	t_Info$uid = uid;
-	t_Info$gid = gid;
-	t_Info$auid = auid;
-	t_Info$euid = euid;
-	t_Info$egid = egid;
-	t_Info$suid = suid;
-	t_Info$sgid = sgid;
-	t_Info$fsuid = fsuid;
-	t_Info$fsgid = fsgid;
 
-	update_value(t_Info);
+	if ( string_test(syscall) )
+		t_Info$syscall = syscall;
+
+	if ( string_test(key) )
+		t_Info$key = key;
+
+	if ( string_test(comm) )
+		t_Info$comm = comm;
+
+	if ( string_test(exe) )
+		t_Info$exe = exe;
+
+	if ( string_test(a0) )
+		t_Info$a0 = a0;
+
+	if ( string_test(a1) )
+		t_Info$a1 = a1;
+
+	if ( string_test(a2) )
+		t_Info$a2 = a2;
+
+	if ( int_test(ppid) )
+		t_Info$ppid = ppid;
+
+	if ( string_test(tty) )
+		t_Info$tty = tty;
+
+	if ( string_test(success) )
+		t_Info$success = success;
+
+	if ( string_test(ext) )
+		t_Info$ext = ext;
+
+	# identification
+	update_identity(ses, node, auid, uid, gid, euid, egid, fsuid, fsgid, suid, sgid);
+
+	update_action(t_Info);
 
 	# if the last record, print it
-	if ( last_record(index) == 1 )
+	if ( last_record(index) == 1 ) {
+		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
-	}
+		delete_action(index,node);
+		}
+
+	} # end event auditd_syscall
 
 event auditd_user(index: string, action: string, ts: time, node: string, ses: int, pid: int, auid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string, sgid: string, uid: string, gid: string, exe: string, terminal: string, success: string, ext: string, msg: string)
 	{
 	# look up the related record
-	local t_Info = get_record(index,pid,ses,node);
+	local t_Info = get_action_obj(index,node);
 
 	# for now just update the field values
 	# only update the action for some types
-	t_Info$action = action;
-	t_Info$ts = ts;
-	t_Info$ses = ses;
-	t_Info$pid = pid;
-	#
-	t_Info$msg = msg;
-	t_Info$exe = exe;
-	t_Info$terminal = terminal;
-	t_Info$success = success;
-	t_Info$ext = ext;
-	# identification
-	t_Info$uid = uid;
-	t_Info$gid = gid;
-	t_Info$auid = auid;
-	t_Info$euid = euid;
-	t_Info$egid = egid;
-	t_Info$suid = suid;
-	t_Info$sgid = sgid;
-	t_Info$fsuid = fsuid;
-	t_Info$fsgid = fsgid;
+	if ( string_test(index) )
+		t_Info$index = index;
 
-	update_value(t_Info);
+	if ( string_test(action) )
+		t_Info$action = action;
+
+	if ( time_test(ts) )
+		t_Info$ts = ts;
+
+	if ( int_test(ses) )
+		t_Info$ses = ses;
+
+	if ( int_test(pid) )
+		t_Info$pid = pid;
+
+	## ----- ##
+
+	if ( string_test(msg) )
+		t_Info$msg = msg;
+
+	if ( string_test(exe) )
+		t_Info$exe = exe;
+	
+	if ( string_test(terminal) )
+		t_Info$terminal = terminal;
+
+	if ( string_test(success) )
+		t_Info$success = success;
+
+	if ( string_test(ext) )
+		t_Info$ext = ext;
+
+	# identification
+	update_identity(ses, node, auid, uid, gid, euid, egid, fsuid, fsgid, suid, sgid);
+
+	update_action(t_Info);
 
 	# if the last record, print it
-	if ( last_record(index) == 1 )
+	if ( last_record(index) == 1 ) {
+		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
+		delete_action(index,node);
+		}
+
 	}
 	
 
 event bro_init() &priority = 5
 {
-	  Log::create_stream(AUDITD_CORE::LOG, [$columns=Info]);
+	  Log::create_stream(AUDITD_CORE::LOG, [$columns=AUDITD_CORE::Info]);
 }

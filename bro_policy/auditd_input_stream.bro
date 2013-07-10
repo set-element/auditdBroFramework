@@ -163,7 +163,7 @@ function syscall_f(data: string) : count
 	local a1 = s_string( parts[13] );
 	local a2 = s_string( parts[14] );
 	local uid = s_string( parts[15] );
-	local gid = s_string parts[16] );
+	local gid = s_string( parts[16] );
 	local euid = s_string( parts[17] );
 	local egid = s_string( parts[18] );
 	local fsuid = s_string( parts[19] );

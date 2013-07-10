@@ -22,16 +22,36 @@
 	const INT_CONV_ERROR: int = -100;
 	const STRING_CONV_ERROR: string = "SCERROR";
 
+	#
+	const DATA_NULL:          count = 3;
+	const DATA_PATTERN_ERROR: count = 2;
+	const DATA_CONV_ERROR:    count = 1;
+	const DATA_NOERROR:       count = 0;
+	#
+	# Return data structure which includes both an (non)error code
+	#   as well as the raw data types.
+	type time_return: record {
+		data: time &default = TIME_CONV_ERROR;
+		ret: count &default = DATA_NULL;
+		};
+
+	type string_return: record {
+		data: string &default = STRING_CONV_ERROR;
+		ret: count &default = DATA_NULL;
+		};
+
 function s_time(s: string) : time
 	{
 	# default return value is 0.00000 which is the error token
-	local ret_val: time = TIME_CONV_ERROR;
+	local ret_val: time_return;
 
-	local mpr = match_pattern( s, time_match);
+	local mpr = match_pattern(s, time_match);
 
 	if ( mpr$matched )
-		ret_val = double_to_time( to_double(s));
+		ret_val$ret = DATA_NOERROR;
+		ret_val$data  = double_to_time( to_double(s));
 	else {
+		ret_val$ret = DATA_PATTERN_ERROR;
 		print fmt("TIME PATTERN ERROR: %s", s);
 		}
 
@@ -42,23 +62,26 @@ function s_string(s: string) : string
 	{
 	# substitute '+' with a space
 	local sub_s = subst_string( s, "+", " ");
-	local ret_str: string = STRING_CONV_ERROR;
+	local ret_str: string_return;
 
 	# Note that the value of ret_string should be consitered dangerous
 	#  as the content can contain terminal control characters etc etc.
-	ret_str = raw_unescape_URI( sub_s );
+	ret_str$data = raw_unescape_URI( sub_s );
 
 	# remove backspace characters and some other goop.  Most of this
 	#  is driven from the iSSHD code, but you might as well keep it
 	#  around in case there is hyjinx in the air re user input ...
-	ret_str = edit(ret_str, "\x08");
-	ret_str = edit(ret_str, "\x7f");
-	ret_str = gsub(ret_str, /\x0a/, "");
-	ret_str = gsub(ret_str, /\x1b\x5b\x30\x30\x6d/, "");
-	ret_str = gsub(ret_str, /\x1b\x5b./, "");
+	ret_str$data = edit(ret_str$data, "\x08");
+	ret_str$data = edit(ret_str$data, "\x7f");
+	# goop
+	ret_str$data = gsub(ret_str$data, /\x0a/, "");
+	ret_str$data = gsub(ret_str$data, /\x1b\x5b\x30\x30\x6d/, "");
+	ret_str$data = gsub(ret_str$data, /\x1b\x5b./, "");
 
-	ret_str = escape_string(ret_str);	
-		
+	# now scrape out all the binary goo that might still
+	#   be sitting around waiting to cause problems for us ....
+	ret_str$data = escape_string(ret_str$data);	
+	ret_str$ret = DATA_NOERROR;
 
 	return ret_str;
 	}
