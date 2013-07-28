@@ -49,7 +49,7 @@ function execve_f(data: string) : count
 	local argc = s_int( parts[8] );		# number of arguments for exec (starts at 1)
 	local argument = s_string( parts[9] );	# total argument string
 
-	event auditd_execve(index, action, ts, node, ses, pid, argc, argument);
+	event auditd_execve(index$data, action$data, ts$data, node$data, ses, pid, argc, argument$data);
 	#event AUDITD_CORE::auditd_execve(index, action, ts, node, ses, pid, argc, argument);
 
 	return 0;
@@ -90,7 +90,7 @@ function generic_f(data: string) : count
 	local success = s_string( parts[26] );
 	local ext = s_string( parts[27] );	
 
-	event auditd_generic(index, action, ts, node, ses, pid, auid, comm, exe, a0, a1, a2, uid, gid, euid, egid, fsuid, fsgid, suid, sgid, ppid, tty, terminal, success, ext);
+	event auditd_generic(index$data, action$data, ts$data, node$data, ses, pid, auid$data, comm$data, exe$data, a0$data, a1$data, a2$data, uid$data, gid$data, euid$data, egid$data, fsuid$data, fsgid$data, suid$data, sgid$data, ppid, tty$data, terminal$data, success$data, ext$data);
 
 	return 0;
 	}
@@ -117,7 +117,7 @@ function place_f(data: string) : count
 	local ouid = s_string( parts[12] );
 	local ogid = s_string( parts[13] );
 
-	event auditd_place(index, action, ts, node, ses, pid, cwd, path_name, inode, mode, ouid, ogid);
+	event auditd_place(index$data, action$data, ts$data, node$data, ses, pid, cwd$data, path_name$data, inode, mode, ouid$data, ogid$data);
 	return 0;
 	}
 
@@ -137,7 +137,7 @@ function saddr_f(data: string) : count
 	#
 	local saddr = s_string( parts[8] );	# address object (local or inet)
 
-	event auditd_saddr(index, action, ts, node, ses, pid, saddr);
+	event auditd_saddr(index$data, action$data, ts$data, node$data, ses, pid, saddr$data);
 	return 0;
 	}
 
@@ -177,7 +177,7 @@ function syscall_f(data: string) : count
 	local success = s_string( parts[26] );
 	local ext = s_string( parts[27] );
 
-	event auditd_syscall(index, action, ts, node, ses, pid, auid, syscall, key, comm, exe, a0, a1, a2, uid, gid, euid, egid, fsuid, fsgid, suid, sgid, ppid, tty, success, ext);
+	event auditd_syscall(index$data, action$data, ts$data, node$data, ses, pid, auid$data, syscall$data, key$data, comm$data, exe$data, a0$data, a1$data, a2$data, uid$data, gid$data, euid$data, egid$data, fsuid$data, fsgid$data, suid$data, sgid$data, ppid, tty$data, success$data, ext$data);
 	#event auditd_syscall(index, action, ts, node, ses, pid, auid, syscall, key, comm, exe, a0, a1, a2, uid, gid, euid, egid, fsuid, fsgid, suid, sgid, ppid, tty, terminal, success, ext);
 	return 0;
 	}
@@ -211,7 +211,7 @@ function user_f(data: string) : count
 	local exe = s_string( parts[20] );
 	local msg = s_string( parts[21] );
 
-	event auditd_user(index, action, ts, node, ses, pid, auid, euid, egid, fsuid, fsgid, suid, sgid, uid, gid, exe, terminal, success, ext, msg);
+	event auditd_user(index$data, action$data, ts$data, node$data, ses, pid, auid$data, euid$data, egid$data, fsuid$data, fsgid$data, suid$data, sgid$data, uid$data, gid$data, exe$data, terminal$data, success$data, ext$data, msg$data);
 	return 0;
 	}
 

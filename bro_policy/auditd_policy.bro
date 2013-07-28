@@ -31,24 +31,24 @@ export {
 	### --- ###
 	# This is the set of system calls that define the creation of a 
 	#  network listening socket	
-	global net_listen_syscalls: set[string];
+	global net_listen_syscalls: set[string] &redef;
 
 	# Data struct to hold information about a generated socket
 	type IPID: record {
 		ip:      addr   &default=ADDR_CONV_ERROR;
-		prt:     count  &default=PORT_CONV_ERROR;
+		prt:     port   &default=PORT_CONV_ERROR;
 		syscall: string &default=STRING_CONV_ERROR;
 		#ts:	 time   &default=TIME_CONV_ERROR;
 		error:   count  &default=0;
-		}
+		};
 
 	# this is a short term mapping designed to live for
 	#   action duration
-	ip_id_map: table[string] if IPID;
+	global ip_id_map: table[string] of IPID;
 
 	# this tracks rolling execution history of user and is
 	#   keyed on the longer lived whoami id
-	execution_history: table[string] of set[string];
+	global execution_history: table[string] of set[string];
 
 	} # end export
 		
@@ -83,16 +83,16 @@ redef net_listen_syscalls += { "bind", "accept", };
 # This function compares two id values and in the event that
 #  the post value are not whitelisted you get {0,1,2} 
 #  depending on results.
-function identity_atomic(old_id: string, new_id: string): count 
+function identity_atomic(old_id: string, new_id: string): bool
 	{
-	local ret_val = 0;
+	local ret_val = F;
 
 	if ( (new_id != old_id) && (old_id != NULL_ID) ) {
 		# there has been a non-trivial change in identity
 		if ( (new_id !in whitelist_to_id) && (old_id !in whitelist_from_id) )
-			ret_val = 1;
+			ret_val = F;
 		else
-			ret_val = 2;
+			ret_val = T;
 		}
 
 	return ret_val;
@@ -101,58 +101,52 @@ function identity_atomic(old_id: string, new_id: string): count
 # Look for a unexpected transformation of the identity subvalues
 #  returning a vector of changes.
 #
-function identity_test(whoami, auid: int, uid: int, gid: int, euid: int, egid: int, fsuid: int, fsgid: int, suid: int, sgid: int): count
+function identity_test(ses: int, node: string, auid: string, uid: string, gid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string, sgid: string): count
 	{
 	# return value is a map of 
 	local ret_val = 0;
 
 	# Tests current set of provided identities against the current archived set
-	#
-	local t_Info = AUDITD_CORE::get_record(index,pid,ses,node);
+	#  - pick it up.
+	local id_index =  AUDITD_CORE::get_identity_id(ses, node);
+	local id =  AUDITD_CORE::identityState[id_index];
 
 	# In this case the record is either new or corrupt.
-	if ( t_Info$uid == NULL_ID )
-		return;
+	if ( uid == NULL_ID )
+		return ret_val;
 
 	# this is a mess, there *must* be a better way to do this ...
-	if ( identity_atomic(t_Info$uid, uid) == 1 )
-		ret_val = ret_val || UID;
+	if ( identity_atomic(id$uid, uid))
+		ret_val = ret_val + UID;
 
-	if ( identity_atomic(t_Info$gid, gid) == 1 )
-		ret_val = ret_val || GID;
+	if ( identity_atomic(id$gid, gid))
+		ret_val = ret_val + GID;
 		
-	if ( identity_atomic(t_Info$euid, euid) == 1 )
-		ret_val = ret_val || EUID;
+	if ( identity_atomic(id$euid, euid))
+		ret_val = ret_val + EUID;
 
-	if ( identity_atomic(t_Info$egid, egid) == 1 )
-		ret_val = ret_val || EGID;
+	if ( identity_atomic(id$egid, egid))
+		ret_val = ret_val + EGID;
 
-	if ( identity_atomic(t_Info$suid, suid) == 1 )
-		ret_val = ret_val || SUID;
+	if ( identity_atomic(id$suid, suid))
+		ret_val = ret_val + SUID;
 
-	if ( identity_atomic(t_Info$sgid, sgid) == 1 )
-		ret_val = ret_val || SGID;
+	if ( identity_atomic(id$sgid, sgid))
+		ret_val = ret_val + SGID;
 
-	if ( identity_atomic(t_Info$fsuid, fsuid) == 1 )
-		ret_val = ret_val || FSUID;
+	if ( identity_atomic(id$fsuid, fsuid))
+		ret_val = ret_val + FSUID;
 
-	if ( identity_atomic(t_Info$fsgid, fsgid) == 1 )
-		ret_val = ret_val || FSGID;
+	if ( identity_atomic(id$fsgid, fsgid))
+		ret_val = ret_val + FSGID;
 
-	if ( identity_atomic(t_Info$ouid, ouid) == 1 )
-		ret_val = ret_val || OUID;
-
-	if ( identity_atomic(t_Info$ogid, ogid) == 1 )
-		ret_val = ret_val || OGID;
-
-	if ( identity_atomic(t_Info$auid, auid) == 1 )
-		ret_val = ret_val || AUID;
+	if ( identity_atomic(id$auid, auid))
+		ret_val = ret_val + AUID;
 
 	return ret_val;
 	}
 
 
-function network_log_listener(index: string, whoami: string, s_host: string, s_serv: string, syscall: string) : count
 function network_log_listener(i: AUDITD_CORE::Info) : count
 	{
 	# This captures data from the system calls bind() and
@@ -178,7 +172,7 @@ function network_log_listener(i: AUDITD_CORE::Info) : count
 		return 1;
 
 	if ( i$s_host != "NO_HOST" ) {
-		local t_ip = s_addr(s_host);
+		local t_ip = s_addr(i$s_host);
 
 		if ( t_ip != ADDR_CONV_ERROR )
 			t_IPID$ip = t_ip;
@@ -188,7 +182,7 @@ function network_log_listener(i: AUDITD_CORE::Info) : count
 		}
 
 	if ( i$s_serv != "NO_PORT" ) {
-		local t_port = s_port(s_serv);
+		local t_port = s_port(i$s_serv);
 
 		if ( t_port != PORT_CONV_ERROR )
 			t_IPID$prt = t_port;
@@ -199,8 +193,8 @@ function network_log_listener(i: AUDITD_CORE::Info) : count
 
 	if ( i$syscall != "NO_SYSCALL" ) {
 
-		if ( syscall in net_listen_syscalls )
-			t_IPID$syscall = syscall;
+		if ( i$syscall in net_listen_syscalls )
+			t_IPID$syscall = i$syscall;
 		else 	# error
 			++t_IPID$error;
 
@@ -213,7 +207,7 @@ function network_log_listener(i: AUDITD_CORE::Info) : count
 	if ( (t_IPID$syscall != STRING_CONV_ERROR) && (t_IPID$ip != ADDR_CONV_ERROR)) {
 		# process the new listener.
 		#
-		event SERVER::holding();
+		#event SERVER::holding();
 		}
 
 	ip_id_map[temp_index] = t_IPID;	
@@ -222,7 +216,7 @@ function network_log_listener(i: AUDITD_CORE::Info) : count
 	}
 
 
-function network_register_conn(index: string, whoami: string, s_host: string, s_serv: string, syscall: string) : count
+function network_register_conn(i: AUDITD_CORE::Info) : count
 	{
 	# This attempts to register outbound network connection data with a central correlator
 	#  in order to link the {user:conn} with the "real" netwok connection as seen by the 
@@ -269,13 +263,22 @@ event auditd_policy_dispatcher(i: AUDITD_CORE::Info)
 				network_register_conn(i);
 				break;
 			case "bind":
+				network_log_listener(i);
+				break;
 			case "listen":
+				network_log_listener(i);
+				break;
 			case "socket":
+				network_log_listener(i);
+				break;
 			case "socketpair":
-				#network_log_listener(i);
+				network_log_listener(i);
 				break;
 			case "accept":
+				network_log_listener(i);
+				break;
 			case "accept4":
+				network_log_listener(i);
 				break;
 			}
                 break;

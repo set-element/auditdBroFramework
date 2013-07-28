@@ -40,16 +40,17 @@
 		ret: count &default = DATA_NULL;
 		};
 
-function s_time(s: string) : time
+function s_time(s: string) : time_return
 	{
 	# default return value is 0.00000 which is the error token
 	local ret_val: time_return;
 
 	local mpr = match_pattern(s, time_match);
 
-	if ( mpr$matched )
+	if ( mpr$matched ) {
 		ret_val$ret = DATA_NOERROR;
 		ret_val$data  = double_to_time( to_double(s));
+		}
 	else {
 		ret_val$ret = DATA_PATTERN_ERROR;
 		print fmt("TIME PATTERN ERROR: %s", s);
@@ -58,7 +59,7 @@ function s_time(s: string) : time
 	return ret_val;
 	}
 
-function s_string(s: string) : string
+function s_string(s: string) : string_return
 	{
 	# substitute '+' with a space
 	local sub_s = subst_string( s, "+", " ");
