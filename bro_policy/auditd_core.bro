@@ -31,8 +31,8 @@ export {
 	#   / alpha record.
 	#
 	type identity: record {
-		ses:       int &log &default=-1;             # numeric session id or 'unset'
-		node:   string &log &default="NULL";         # what host is this happening on
+		ses:       int &log &default=-1;       	        # numeric session id or 'unset'
+		node:   string &log &default="NULL";            # what host is this happening on
 		## -- identity info (process) --
 		auid:   string &log &default=ID_DEFAULT;	# audit id, immutable even if id changes
 		uid:    string &log &default=ID_DEFAULT;	# user id
@@ -159,7 +159,9 @@ function get_action_obj(index: string, node: string) : Info
 {
 	local key = get_action_id(index,node);
 	local t_Info: Info;
-print fmt("index: %s key: %s", index, key);
+
+	print fmt("index: %s key: %s", index, key);
+
 	# error state test - the action 
 	if ( key == "NULL" ) {
 		t_Info$action = "ERROR_STATE";

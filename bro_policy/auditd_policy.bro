@@ -19,8 +19,12 @@ export {
 
 	redef enum Notice::Type += {
 		AUDITD_PermissionTransform,
+		AUDITD_SocketOpen,
 		};
 
+	# List of identities which are consitered ok to be seen translating
+	#  between one another.
+	#
 	global whitelist_to_id: set[string] &redef;
 	global whitelist_from_id: set[string] &redef;
 
@@ -29,11 +33,13 @@ export {
 	#  network listening socket	
 	global net_listen_syscalls: set[string];
 
+	# Data struct to hold information about a generated socket
 	type IPID: record {
-		ip:      addr &default=ADDR_CONV_ERROR;
-		prt:     count &default=PORT_CONV_ERROR;
+		ip:      addr   &default=ADDR_CONV_ERROR;
+		prt:     count  &default=PORT_CONV_ERROR;
 		syscall: string &default=STRING_CONV_ERROR;
-		error:   count &default=0;
+		#ts:	 time   &default=TIME_CONV_ERROR;
+		error:   count  &default=0;
 		}
 
 	# this is a short term mapping designed to live for
@@ -73,12 +79,16 @@ redef net_listen_syscalls += { "bind", "accept", };
 #      Functions
 ### ----- # ----- ###
 
+
+# This function compares two id values and in the event that
+#  the post value are not whitelisted you get {0,1,2} 
+#  depending on results.
 function identity_atomic(old_id: string, new_id: string): count 
 	{
 	local ret_val = 0;
 
 	if ( (new_id != old_id) && (old_id != NULL_ID) ) {
-		# there has been a non-trivial change
+		# there has been a non-trivial change in identity
 		if ( (new_id !in whitelist_to_id) && (old_id !in whitelist_from_id) )
 			ret_val = 1;
 		else
@@ -88,6 +98,9 @@ function identity_atomic(old_id: string, new_id: string): count
 	return ret_val;
 	}
 
+# Look for a unexpected transformation of the identity subvalues
+#  returning a vector of changes.
+#
 function identity_test(whoami, auid: int, uid: int, gid: int, euid: int, egid: int, fsuid: int, fsgid: int, suid: int, sgid: int): count
 	{
 	# return value is a map of 
@@ -140,16 +153,18 @@ function identity_test(whoami, auid: int, uid: int, gid: int, euid: int, egid: i
 
 
 function network_log_listener(index: string, whoami: string, s_host: string, s_serv: string, syscall: string) : count
+function network_log_listener(i: AUDITD_CORE::Info) : count
 	{
 	# This captures data from the system calls bind() and
 	#  accept() and checks to see if the system in question already
 	#  has an open network listener
 	#
-	# Here use the ip_id_map to store data: use {index}{whoami} as the
+	# Here use the ip_id_map to store data: use {ses}{node} as the
 	#   table index.  Results for the listener will be handed over to the 
 	#   systems object for further analysis.
+
 	local ret_val = 0;
-	local temp_index = fmt("%s%s", index, whoami);
+	local temp_index = fmt("%s%s", i$ses, i$node);
 	local t_IPID: IPID;
 
 	# normally the syscall happens before the saddr data arrives
@@ -162,7 +177,7 @@ function network_log_listener(index: string, whoami: string, s_host: string, s_s
 	if ( t_IPID$error != 0 )
 		return 1;
 
-	if ( s_host != "NO_HOST" ) {
+	if ( i$s_host != "NO_HOST" ) {
 		local t_ip = s_addr(s_host);
 
 		if ( t_ip != ADDR_CONV_ERROR )
@@ -172,7 +187,7 @@ function network_log_listener(index: string, whoami: string, s_host: string, s_s
 
 		}
 
-	if ( s_serv != "NO_PORT" ) {
+	if ( i$s_serv != "NO_PORT" ) {
 		local t_port = s_port(s_serv);
 
 		if ( t_port != PORT_CONV_ERROR )
@@ -182,7 +197,7 @@ function network_log_listener(index: string, whoami: string, s_host: string, s_s
 
 		}
 
-	if ( syscall != "NO_SYSCALL" ) {
+	if ( i$syscall != "NO_SYSCALL" ) {
 
 		if ( syscall in net_listen_syscalls )
 			t_IPID$syscall = syscall;
@@ -196,6 +211,8 @@ function network_log_listener(index: string, whoami: string, s_host: string, s_s
 	#  holding all the info on this system
 	#
 	if ( (t_IPID$syscall != STRING_CONV_ERROR) && (t_IPID$ip != ADDR_CONV_ERROR)) {
+		# process the new listener.
+		#
 		event SERVER::holding();
 		}
 
@@ -205,116 +222,71 @@ function network_log_listener(index: string, whoami: string, s_host: string, s_s
 	}
 
 
-function network_register_conn
+function network_register_conn(index: string, whoami: string, s_host: string, s_serv: string, syscall: string) : count
+	{
+	# This attempts to register outbound network connection data with a central correlator
+	#  in order to link the {user:conn} with the "real" netwok connection as seen by the 
+	#  external network facing bro.
+	#
+	# Connect() calls look like:
+	# 
 
 
+	}
 
 ### ----- # ----- ###
 #      Events
 ### ----- # ----- ###
-event auditd_execve(index: string, action: string, ts: time, node: string, ses: int, pid: int, argc: int, argument: string) &priority=5
+
+event auditd_policy_dispatcher(i: AUDITD_CORE::Info)
 	{
-	# look up the related record
-	local t_Info = get_record(index,pid,ses,node);
+	# This makes routing decisions for policy based on Info content.  It is
+	#  a bit of a kluge, but will have to do for now.
 
+	# Initial filtering based on action and key values
+	#  ex: {PLACE_OBJ, PATH} .
 
-	}
-
-
-event auditd_generic(index: string, action: string, ts: time, node: string, ses: int, pid: int, auid: string, comm: string, exe: string, a0: string, a1: string, a2: string, uid: string, gid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string, sgid: string, ppid: int, tty: string, terminal: string, success: string, ext: string) &priority=5
-	{
-	# look up the related record
-	local t_Info = get_record(index,pid,ses,node);
-
-
-	}
-
-event auditd_place(index: string, action: string, ts: time, node: string, ses: int, pid: int, cwd: string, path_name: string, inode: int, mode: int, ouid: string, ogid: string) &priority=5
-	{
-	# look up the related record
-	local t_Info = get_record(index,pid,ses,node);
-
-
-	}
-
-event auditd_saddr(index: string, action: string, ts: time, node: string, ses: int, pid: int, saddr: string) &priority=5
-	{
-
-	# most of the work here will be in decoding the saddr structure
+	# Key is from audit.rules
 	#
-	# common types:
-	# 	inet host 1.2.3.4 serv:123
-	# 	local /dev/filename
-	# 	netlink /dev/log
-	#
-	# will be broken out into the followign structures
-	#
-	# 	type : {inet host|local|netlink}
-	# 	host : {file|device|ip} identifies where
-	# 	serv : {port} (optional) identifies what
-	#
-	
-	local t_Info = get_record(index,pid,ses,node);
+	local action = i$action;
+	local key    = i$key;
+	local syscall = i$syscall;	
 
-	# decode the saddr structure
-	local t_saddr = unescape_URI(saddr);
-	local split_saddr = split(t_saddr, / / );
+        switch ( action ) {
+        case "EXECVE":
+                break;
+        case "GENERIC":
+                break;
+        case "PLACE":
+                break;
+        case "SADDR":
+                break;
+        case "SYSCALL":
+		switch( syscall ) {
+			# from syscalls: bind, connect, accept, accept4, listen, socketpair, socket
+			# key: SYS_NET
+			case "connect":
+				network_register_conn(i);
+				break;
+			case "bind":
+			case "listen":
+			case "socket":
+			case "socketpair":
+				#network_log_listener(i);
+				break;
+			case "accept":
+			case "accept4":
+				break;
+			}
+                break;
+        case "USER":
+                break;
+        }
 
-	local stype = split_saddr[1];
-	local host = split_saddr[2];
-
-	if ( |split_saddr| > 2 ) {
-		local serv = split_saddr[3];
-		local t_serv = split( serv, /:/ );
-		}
-
-	local t_host = split( host, /:/ );
-
-	# make decisions based on field 1
-	if ( stype == "inet" ) {
-
-		t_Info$s_type = stype;
-		t_Info$s_host = t_host[2];
-		t_Info$s_serv = t_serv[2];
-
-		}
-	else if ( stype == "local" ) {
-		
-		t_Info$s_type = stype;
-		t_Info$s_host = host;
-
-		} 
-	else if ( stype == "netlink" ) {
-
-		t_Info$s_type = stype;
-		t_Info$s_host = t_host[2];
-		
-		}
-
-	update_value(t_Info);
-
-	# if the last record, print it
-	if ( last_record(index) == 1 )
-		Log::write(LOG, t_Info);
-	}
-
-
-event auditd_syscall(index: string, action: string, ts: time, node: string, ses: int, pid: int, auid: string, syscall: string, key: string, comm: string, exe: string, a0: string, a1: string, a2: string, uid: string, gid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string, sgid: string, ppid: int, tty: string, success: string, ext: string)  &priority=5
-	{
-	# look up the related record
-	local t_Info = get_record(index,pid,ses,node);
-
-	}
-
-event auditd_user(index: string, action: string, ts: time, node: string, ses: int, pid: int, auid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string, sgid: string, uid: string, gid: string, exe: string, terminal: string, success: string, ext: string, msg: string) &priority=5
-	{
-	# look up the related record
-	local t_Info = get_record(index,pid,ses,node);
-
-	}
 	
 
-event bro_init() &priority = 5
-{
-	  Log::create_stream(AUDITD_CORE::LOG, [$columns=Info]);
-}
+	} # event end
+
+# do a test for "where" somwthing is executed like /dev/shm ...
+
+
