@@ -10,7 +10,6 @@
 #   systems is reasonably high.  Because of this the node identity is appended to 
 #   ses and pid values since the internal systems should remove duplicate values.
 #
-@load auditd_core
 @load util
 
 module AUDITD_POLICY;
@@ -21,6 +20,9 @@ export {
 		AUDITD_PermissionTransform,
 		AUDITD_SocketOpen,
 		};
+
+	# tag for file loaded
+	const AUDITD_POLICY_LOAD = T;
 
 	# List of identities which are consitered ok to be seen translating
 	#  between one another.
@@ -49,6 +51,19 @@ export {
 	# this tracks rolling execution history of user and is
 	#   keyed on the longer lived whoami id
 	global execution_history: table[string] of set[string];
+
+	global auditd_policy_dispatcher: event(i: Info);
+	global s: event(s: string);
+
+	## Execution configuration ##
+
+	# blacklist of directories which 
+	global exec_blacklist = /dev/ &redef;
+	global exec_blacklist_test = T &redef;
+	
+	# identiy related configs
+	global identity_drift_test = T &redef;
+
 
 	} # end export
 		
@@ -79,6 +94,17 @@ redef net_listen_syscalls += { "bind", "accept", };
 #      Functions
 ### ----- # ----- ###
 
+function get_identity_id(ses: int, node: string) : string
+{
+	# This function returns the identity-id (huh?!?)
+	local ret = "NULL";
+	
+	if (! ((ses == INT_CONV_ERROR) || (node == STRING_CONV_ERROR)) )
+		ret = fmt("%s%s", ses, node);
+
+	return ret;
+}
+
 
 # This function compares two id values and in the event that
 #  the post value are not whitelisted you get {0,1,2} 
@@ -101,53 +127,104 @@ function identity_atomic(old_id: string, new_id: string): bool
 # Look for a unexpected transformation of the identity subvalues
 #  returning a vector of changes.
 #
-function identity_test(ses: int, node: string, auid: string, uid: string, gid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string, sgid: string): count
+# NOTE: the record provided by identityState[] has *not* yet been synced 
+#  to the current living record, so changes will be reflected in the diff
+#  between the live record and the historical.
+#
+#function identity_test(ses: int, node: string, auid: string, uid: string, gid: string, euid: string, egid: string, fsuid: string, fsgid: string, suid: string, sgid: string): count
+function identity_test(inf: Info) : count
 	{
 	# return value is a map of 
 	local ret_val = 0;
 
 	# Tests current set of provided identities against the current archived set
 	#  - pick it up.
-	local id_index =  AUDITD_CORE::get_identity_id(ses, node);
-	local id =  AUDITD_CORE::identityState[id_index];
+	local id_index =  get_identity_id(inf$i$ses, inf$i$node);
+	local old_id =  identityState[id_index];
 
 	# In this case the record is either new or corrupt.
-	if ( uid == NULL_ID )
+	if ( inf$i$uid == NULL_ID )
 		return ret_val;
 
 	# this is a mess, there *must* be a better way to do this ...
-	if ( identity_atomic(id$uid, uid))
+	if ( identity_atomic(old_id$uid, inf$i$uid)) {
 		ret_val = ret_val + UID;
+		print "diff UID";
+		}
 
-	if ( identity_atomic(id$gid, gid))
+	if ( identity_atomic(old_id$gid, inf$i$gid)) {
+		print "diff gid";
 		ret_val = ret_val + GID;
+		}
 		
-	if ( identity_atomic(id$euid, euid))
+	if ( identity_atomic(old_id$euid, inf$i$euid)) {
+		print "diff suid";
 		ret_val = ret_val + EUID;
+		}
 
-	if ( identity_atomic(id$egid, egid))
+	if ( identity_atomic(old_id$egid, inf$i$egid)) {
+		print "diff egid";
 		ret_val = ret_val + EGID;
+		}
 
-	if ( identity_atomic(id$suid, suid))
+	if ( identity_atomic(old_id$suid, inf$i$suid)) {
+		print "diff suid";
 		ret_val = ret_val + SUID;
+		}
 
-	if ( identity_atomic(id$sgid, sgid))
+	if ( identity_atomic(old_id$sgid, inf$i$sgid)) {
+		print "diff sgid";
 		ret_val = ret_val + SGID;
+		}
 
-	if ( identity_atomic(id$fsuid, fsuid))
+	if ( identity_atomic(old_id$fsuid, inf$i$fsuid)) {
+		print "diff fsuid";
 		ret_val = ret_val + FSUID;
+		}
 
-	if ( identity_atomic(id$fsgid, fsgid))
+	if ( identity_atomic(old_id$fsgid, inf$i$fsgid)) {
+		print "diff sgid";
 		ret_val = ret_val + FSGID;
+		}
 
-	if ( identity_atomic(id$auid, auid))
+	if ( identity_atomic(old_id$auid, inf$i$auid)) {
+		print "diff auid";
 		ret_val = ret_val + AUID;
+		}
 
+	print fmt("ID check: %s", ret_val);
 	return ret_val;
 	}
 
+function process_identity(i: Info) : count
+	{
+	local ret_val = 0;
+	
+	# run the change test and see what we can see
+	local id_diff = identity_test(i);
 
-function network_log_listener(i: AUDITD_CORE::Info) : count
+	# look to see if anything has changed
+	if ( id_diff > 0 ) {
+		# global UID   = 1;
+		# global GID   = 2;
+		# global EUID  = 4;
+		# global EGID  = 8;
+		# global SUID  = 16;
+		# global SGID  = 32;
+		# global FSUID = 64;
+		# global FSGID = 128;
+		# global OGID  = 256;
+		# global OUID  = 512;
+		# global AUID  = 1024;
+		
+		
+
+
+		}
+	return ret_val;
+	}
+
+function network_log_listener(i: Info) : count
 	{
 	# This captures data from the system calls bind() and
 	#  accept() and checks to see if the system in question already
@@ -172,7 +249,7 @@ function network_log_listener(i: AUDITD_CORE::Info) : count
 		return 1;
 
 	if ( i$s_host != "NO_HOST" ) {
-		local t_ip = s_addr(i$s_host);
+		local t_ip = to_addr(i$s_host);
 
 		if ( t_ip != ADDR_CONV_ERROR )
 			t_IPID$ip = t_ip;
@@ -208,6 +285,7 @@ function network_log_listener(i: AUDITD_CORE::Info) : count
 		# process the new listener.
 		#
 		#event SERVER::holding();
+		print fmt("NEW LISTEN SOCKET: %s", t_IPID$prt);
 		}
 
 	ip_id_map[temp_index] = t_IPID;	
@@ -216,7 +294,7 @@ function network_log_listener(i: AUDITD_CORE::Info) : count
 	}
 
 
-function network_register_conn(i: AUDITD_CORE::Info) : count
+function network_register_conn(i: Info) : count
 	{
 	# This attempts to register outbound network connection data with a central correlator
 	#  in order to link the {user:conn} with the "real" netwok connection as seen by the 
@@ -225,14 +303,54 @@ function network_register_conn(i: AUDITD_CORE::Info) : count
 	# Connect() calls look like:
 	# 
 
+	#if ( i$s_type == "inet" )
+	#	print fmt("conn %s %s -> %s :%s", i$node, i$s_type, i$s_host, i$s_serv);
 
+	return 0;
+	}
+
+function exec_pathcheck(exec_path: string) : count
+	{
+	# given a list of directory prefixes, check to see if the path
+	#  sits in any of them
+	# note that the path privided is should be consitered 'absolute'.
+
+	local ret_val = 0;
+
+	if ( exec_blacklist in exec_path ) {
+		
+		print fmt("EXECBLACKLIST: %s", exec_path);
+		ret_val = 1;
+		}
+	return ret_val;
+	}
+
+function exec_wrapper(inf: Info) : count
+	{
+	# There are many things to be done with the execution chain.  This is the wrapper
+	#   for that set of things to do.
+	# Where is (it) being executed
+	# Permissions chain/changes
+	# Exec history ( n=5?)
+	print "exec wrapper";
+	local ret_val = 0;
+
+	if ( exec_blacklist_test )
+		exec_pathcheck(inf$exe);
+
+	# track id drift.  start by just detecting it, then begin building
+	#  whitelists and implement
+	if ( identity_drift_test )	
+		identity_test(inf);
+
+	return ret_val;
 	}
 
 ### ----- # ----- ###
 #      Events
 ### ----- # ----- ###
 
-event auditd_policy_dispatcher(i: AUDITD_CORE::Info)
+event auditd_policy_dispatcher(inf: Info)
 	{
 	# This makes routing decisions for policy based on Info content.  It is
 	#  a bit of a kluge, but will have to do for now.
@@ -242,9 +360,9 @@ event auditd_policy_dispatcher(i: AUDITD_CORE::Info)
 
 	# Key is from audit.rules
 	#
-	local action = i$action;
-	local key    = i$key;
-	local syscall = i$syscall;	
+	local action = inf$action;
+	local key    = inf$key;
+	local syscall = inf$syscall;	
 
         switch ( action ) {
         case "EXECVE":
@@ -257,28 +375,35 @@ event auditd_policy_dispatcher(i: AUDITD_CORE::Info)
                 break;
         case "SYSCALL":
 		switch( syscall ) {
+			### ----- ## ----- ####
 			# from syscalls: bind, connect, accept, accept4, listen, socketpair, socket
 			# key: SYS_NET
-			case "connect":
-				network_register_conn(i);
+			case "connect":		# initiate a connection on a socket (C/S)
+				network_register_conn(inf);
 				break;
-			case "bind":
-				network_log_listener(i);
+			case "bind": 		# bind a name/address to a socket (S)
+				network_log_listener(inf);
 				break;
-			case "listen":
-				network_log_listener(i);
+			case "listen":		# listen for connections on a socket (S)
+				network_log_listener(inf);
 				break;
-			case "socket":
-				network_log_listener(i);
+			case "socket":		# create an endpoint for communication (C/S)
+				network_log_listener(inf);
 				break;
-			case "socketpair":
-				network_log_listener(i);
+			case "socketpair":	# create a pair of connected sockets (C/S)
+				network_log_listener(inf);
 				break;
-			case "accept":
-				network_log_listener(i);
+			case "accept":		# accept a connection on a socket (S)
+				network_log_listener(inf);
 				break;
-			case "accept4":
-				network_log_listener(i);
+			case "accept4":		#  accept a connection on a socket (S)
+				network_log_listener(inf);
+				break;
+			### ----- ## ----- ####
+			# 
+			case "execve":
+				print "calling exec_wrapper";
+				exec_wrapper(inf);
 				break;
 			}
                 break;

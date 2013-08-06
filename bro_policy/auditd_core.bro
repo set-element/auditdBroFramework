@@ -22,81 +22,10 @@ export {
 	const ID_DEFAULT = "-1";
 	const INFO_NULL  = "NULL";
 
-	# Used to keep track of the assigned *id/*gid values for a per host session identity.
-	#   This is the description of the who in an auditable event.  It needs to be stored
-	#   separately from the Info record since it lives for the entire duration of the session
-	#   rather than the individual event.
-	#
-	# It is logged as a component of the Info record, and updated at a:b:1 for the primary
-	#   / alpha record.
-	#
-	type identity: record {
-		ses:       int &log &default=-1;       	        # numeric session id or 'unset'
-		node:   string &log &default="NULL";            # what host is this happening on
-		## -- identity info (process) --
-		auid:   string &log &default=ID_DEFAULT;	# audit id, immutable even if id changes
-		uid:    string &log &default=ID_DEFAULT;	# user id
-		gid:    string &log &default=ID_DEFAULT;	# group id
-		euid:   string &log &default=ID_DEFAULT;	# effective user id
-		egid:   string &log &default=ID_DEFAULT;	# effective group id
-		suid:   string &log &default=ID_DEFAULT;	# set user id
-		sgid:   string &log &default=ID_DEFAULT;	# set group id
-		## -- identity info (file system) --
-		fsuid:  string &log &default=ID_DEFAULT;	# file system user id
-		fsgid:  string &log &default=ID_DEFAULT;	# file system group id
-		};
-	
-
-	# Track action characteristics - this is defined as the aggrigate characteristics of
-	#   an individual auditable event not defined in the identity object.  This is the description
-	#   of what happened rather than who did it.
-	#
-	type Info: record {
-		## -- indexing information --
-		ts:        time   &log;				#
-		i:         identity &log;			# identity structure defined above
-		index:     string &log &default=INFO_NULL;	# identifier provided by key in getid()
-		node:      string &log &default=INFO_NULL;	# what host is this happening on
-		pid:       int    &log &default=-1;		# curent pid
-		ses:       int    &log &default=-1;		# numeric session id or 'unset'
-
-		## -- class info --
-		action:    string &log &default=INFO_NULL;	# class of action (ex: 'SYSCALL_OBJ'), also ERROR_FLAG
-		key:       string &log &default=INFO_NULL;	# subtype of class (ex: 'SYS_NET')
-
-		## -- what happened --
-		syscall:   string &log &default=INFO_NULL;	# syscall name
-		comm:      string &log &default=INFO_NULL;	# name as appears in 'ps'
-		exe:       string &log &default=INFO_NULL;	# full exe name + path
-
-		## -- details --
-		msg:       string &log &default=INFO_NULL;
-		s_type:    string &log &default=INFO_NULL;	# name or file type socket
-		s_host:    string &log &default=INFO_NULL;	# *where* the socket type is pointing
-		s_serv:    string &log &default=INFO_NULL;	# service it is pointing to
-		path_name: string &log &default=INFO_NULL;	# gen 1x per path element passed to syscall
-		cwd:       string &log &default=INFO_NULL;	# current working direct at time of syscall
-		a0:        string &log &default=INFO_NULL;	# argument0 to syscall
-		a1:        string &log &default=INFO_NULL;	# ..
-		a2:        string &log &default=INFO_NULL;	# ..
-		arg_t:     string &log &default=INFO_NULL;	# for exec, *total* set of args
-		ppid:      int    &log &default=-1; 		# parent pid
-		tty:       string &log &default=INFO_NULL; 	# tty type or NO_TTY
-		terminal:  string &log &default=INFO_NULL; 	# terminal data or NO_TERM
-		success:   string &log &default=INFO_NULL;	# if syscall succedded or not 
-		ext:       string &log &default=INFO_NULL;	# exit code for call
-		ouid:      string &log &default=INFO_NULL;	# uid on file system inode
-		ogid:      string &log &default=INFO_NULL;	# gid on file system inode
-		};
-
 	const zero_int: int = 0;	
 
 	# to map identity <=> action use sid:node as "identity-id"
 	# to map action-id and record[n] use index:node as "action-id"
-
-	# main state table: driven by *key*
-	global actionState: table[string] of Info;
-	global identityState: table[string] of identity;	
 
 	# exported functions
 	global get_action_id: function(index: string, node: string) : string;
@@ -104,6 +33,7 @@ export {
 	global get_action_obj: function(index: string, node: string) : Info;
 	global get_identity_obj: function(ses: int, node: string) : identity;
 	global sync_identity: function(index: string, node: string) : Info;
+	global copy_identity: function(index: string, node: string) : Info;
 	global delete_action: function(index: string, node: string);
 	global string_test: function(s: string) : bool;
 	global int_test: function(i: int) : bool;
@@ -160,7 +90,7 @@ function get_action_obj(index: string, node: string) : Info
 	local key = get_action_id(index,node);
 	local t_Info: Info;
 
-	print fmt("index: %s key: %s", index, key);
+	#print fmt("index: %s key: %s", index, key);
 
 	# error state test - the action 
 	if ( key == "NULL" ) {
@@ -221,6 +151,17 @@ function update_action(i: Info)
 	else {
 		print fmt("UPDATE ERROR for index %s", key);
 		}
+}
+
+function copy_identity(index: string, node: string) : Info
+{
+	# Take identity and sync it with the action structure
+	local t_Info = get_action_obj(index,node);
+	local t_identity = get_identity_obj(t_Info$ses, t_Info$node);
+
+	t_Info$i = t_identity;
+
+	return t_Info;
 }
 
 function sync_identity(index: string, node: string) : Info
@@ -368,6 +309,13 @@ event auditd_execve(index: string, action: string, ts: time, node: string, ses: 
 
 	# if the last record, print it and clean up the action state
 	if ( last_record(index) == 1 ) {
+@ifdef ( AUDITD_CORE::AUDITD_POLICY_LOAD )
+		#auditd_policy_dispatcher(copy_identity(index,node));
+		local i = copy_identity(index,node);
+		event AUDITD_POLICY::auditd_policy_dispatcher(i);
+		#print fmt("%s", AUDITD_POLICY::AUDITD_POLICY_LOAD 
+		event s("hello");
+@endif
 		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
 		delete_action(index,node);
@@ -438,6 +386,10 @@ event auditd_generic(index: string, action: string, ts: time, node: string, ses:
 
 	# if the last record, print it
 	if ( last_record(index) == 1 ) {
+@ifdef ( AUDITD_POLICY::AUDITD_POLICY_LOAD )
+		#auditd_policy_dispatcher(copy_identity(index,node));
+		event AUDITD_POLICY::auditd_policy_dispatcher(copy_identity(index,node));
+@endif
 		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
 		delete_action(index,node);
@@ -473,6 +425,10 @@ event auditd_place(index: string, action: string, ts: time, node: string, ses: i
 
 	# if the last record, print it
 	if ( last_record(index) == 1 ) {
+@ifdef ( AUDITD_POLICY::AUDITD_POLICY_LOAD )
+		#auditd_policy_dispatcher(copy_identity(index,node));
+		event AUDITD_POLICY::auditd_policy_dispatcher(copy_identity(index,node));
+@endif
 		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
 		delete_action(index,node);
@@ -490,7 +446,7 @@ event auditd_saddr(index: string, action: string, ts: time, node: string, ses: i
 	# 	local /dev/filename
 	# 	netlink /dev/log
 	#
-	# will be broken out into the followign structures
+	# will be broken out into the following structures
 	#
 	# 	type : {inet host|local|netlink}
 	# 	host : {file|device|ip} identifies where
@@ -549,6 +505,10 @@ event auditd_saddr(index: string, action: string, ts: time, node: string, ses: i
 
 	# if the last record, print it
 	if ( last_record(index) == 1 ) {
+@ifdef ( AUDITD_POLICY::AUDITD_POLICY_LOAD )
+		#auditd_policy_dispatcher(copy_identity(index,node));
+		event AUDITD_POLICY::auditd_policy_dispatcher(copy_identity(index,node));
+@endif
 		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
 		delete_action(index,node);
@@ -619,6 +579,10 @@ event auditd_syscall(index: string, action: string, ts: time, node: string, ses:
 
 	# if the last record, print it
 	if ( last_record(index) == 1 ) {
+@ifdef ( AUDITD_POLICY::AUDITD_POLICY_LOAD )
+		#auditd_policy_dispatcher(copy_identity(index,node));
+		event AUDITD_POLICY::auditd_policy_dispatcher(copy_identity(index,node));
+@endif
 		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
 		delete_action(index,node);
@@ -672,6 +636,10 @@ event auditd_user(index: string, action: string, ts: time, node: string, ses: in
 
 	# if the last record, print it
 	if ( last_record(index) == 1 ) {
+if ( AUDITD_POLICY::AUDITD_POLICY_LOAD )
+		#event auditd_policy_dispatcher(copy_identity(index,node));
+		event AUDITD_POLICY::auditd_policy_dispatcher(copy_identity(index,node));
+#@endif
 		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);
 		delete_action(index,node);
@@ -682,5 +650,5 @@ event auditd_user(index: string, action: string, ts: time, node: string, ses: in
 
 event bro_init() &priority = 5
 {
-	  Log::create_stream(AUDITD_CORE::LOG, [$columns=AUDITD_CORE::Info]);
+	  Log::create_stream(AUDITD_CORE::LOG, [$columns=Info]);
 }

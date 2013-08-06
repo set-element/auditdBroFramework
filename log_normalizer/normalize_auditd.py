@@ -50,7 +50,7 @@ def walk_test(au):
 
         event_count += 1
         record_count = 1
-        # Both the ses and pid values will be used for hte base lookups in auditd_core.
+        # Both the ses and pid values will be used for the base lookups in auditd_core.
         # Because of this, records after the first in an event will be benefited by passing
         #  this information along.  If this is not done, a great deal of state goo and churn
         #  is introduced later in the bro code.

@@ -11,7 +11,7 @@
 #       legitimate account.
 #
 @load util
-@load auditd_core
+#@load auditd_core
 
 @load frameworks/communication/listen
 @load base/frameworks/input
