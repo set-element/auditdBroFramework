@@ -310,11 +310,8 @@ event auditd_execve(index: string, action: string, ts: time, node: string, ses: 
 	# if the last record, print it and clean up the action state
 	if ( last_record(index) == 1 ) {
 @ifdef ( AUDITD_CORE::AUDITD_POLICY_LOAD )
-		#auditd_policy_dispatcher(copy_identity(index,node));
 		local i = copy_identity(index,node);
 		event AUDITD_POLICY::auditd_policy_dispatcher(i);
-		#print fmt("%s", AUDITD_POLICY::AUDITD_POLICY_LOAD 
-		event s("hello");
 @endif
 		t_Info = sync_identity(index,node);
 		Log::write(LOG, t_Info);

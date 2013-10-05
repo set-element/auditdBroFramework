@@ -87,7 +87,7 @@ function syscall_connect(inf: Info) : count
 		#  register a new connection.  For now it will
 		#  be any connection, but filtering can be done 
 		#  to limit it to ! is_local() .
-		event register_syc_conn(inf);
+		event register_audit_conn(inf);
 		ret_val = 1;
 		}
 
