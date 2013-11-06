@@ -3,17 +3,24 @@
 import os
 srcdir = os.getenv('srcdir')
 
-files = ["test.log"]
+# These define the two main points of configuration.
+#  DATA_FILE: The constantly appending raw auditd log file
+#  LOAD_PATH: Location of the audit-... install library files containing
+#             the python2.6/site-packages
+#
+DATA_FILE = "A"
+LOAD_PATH = '/home/scottc/development/audit_watch/AUDIT2.2.2/lib64/python2.6/site-packages'
 
 import sys
 import time
-load_path = '../../bindings/python/build/lib.linux-i686-2.4'
-if False:
-    sys.path.insert(0, load_path)
-
 import re
+
+sys.path.insert(0, LOAD_PATH)
 import auparse
 import audit
+
+# local python libs
+from tail import FileTail
 import USER_OBJ 
 import PLACE_OBJ 
 import SYSCALL_OBJ
@@ -21,7 +28,8 @@ import GENERIC_OBJ
 import SOCK_OBJ
 import EXECVE_OBJ
 
-# use a number of generic types to normalize the observed data
+# Bunch of regular expressions to process the data raw data
+# 
 WHERE_RE= re.compile('CWD|PATH')
 SYSCALL_RE = re.compile('SYSCALL')
 WHO_RE = re.compile('USER_')
@@ -30,7 +38,7 @@ SOCKET_RE = re.compile('SOCKADDR')
 EXECVE_RE = re.compile('EXECVE')
 
 event_count = 0
-
+sleep_count = 0
 #
 def none_to_null(s):
     'used so output matches C version'
@@ -39,17 +47,16 @@ def none_to_null(s):
     else:
         return s
 
-def walk_test(au):
-    global event_count
+def feed_callback(au, cb_event_type, event_cnt):
 
-    au.reset()
+    global event_count
+    global sleep_count
+
     while True:
-        if not au.first_record():
-            print "Error getting first record"
-            sys.exit(1)
 
         event_count += 1
         record_count = 1
+
         # Both the ses and pid values will be used for the base lookups in auditd_core.
         # Because of this, records after the first in an event will be benefited by passing
         #  this information along.  If this is not done, a great deal of state goo and churn
@@ -62,7 +69,7 @@ def walk_test(au):
         event_rec_count = au.get_num_records()
 
         while True:
-
+        
             if WHERE_RE.match(audit.audit_msg_type_to_name(au.get_type()) ) :
                 place_object = PLACE_OBJ.init()
                 place_object = place_object.load(au) 
@@ -121,12 +128,25 @@ def walk_test(au):
             if not au.next_record(): break
         if not au.parse_next_event(): break
 
-
+######################################################
 # this is the main "loop"
+######################################################
+au = auparse.AuParser(auparse.AUSOURCE_FEED);
+event_cnt = 1
+au.add_callback(feed_callback, [event_cnt])
+chunk_len = 3
 
-au = auparse.AuParser(auparse.AUSOURCE_FILE_ARRAY, files);
-walk_test(au); 
+t=FileTail(DATA_FILE)
+for s in t:
+    s_len = len(s)
+    beg = 0
+    while beg < s_len:
+        end = min(s_len, beg + chunk_len)
+        data = s[beg:end]
+        beg += chunk_len
+        au.feed(data)
 
-au = None
+au.flush_feed()
+
 sys.exit(0)
 
