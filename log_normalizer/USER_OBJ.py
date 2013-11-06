@@ -60,7 +60,7 @@ class init:
             value = au.interpret_field()
 
             if key in data_filter:
-                print "key=" , key, " value=", value 
+                #print "key=" , key, " value=", value 
                 if key == 'node':
                     s.node = urllib.quote(value) 
                 elif key == 'ses': 
