@@ -81,7 +81,7 @@ class init:
                 elif key == 'msg':
                     s.msg = urllib.quote(value)
                 elif key == 'auid':
-                    s.auid = value
+                    s.auid = value_raw
                 elif key == 'egid':
                     s.egid = value
                 elif key == 'euid':
@@ -103,9 +103,9 @@ class init:
                 elif key == 'exe':
                     s.exe = urllib.quote(value)
                 elif key == 'pid':
-                    s.pid = value
+                    s.pid = value_raw
                 elif key == 'ppid':
-                    s.ppid = value
+                    s.ppid = value_raw
                 elif key == 'key':
                     s.key = value
                 elif key == 'tty':
@@ -123,19 +123,19 @@ class init:
                 elif key == 'type':
                     s.type = value
                 elif key == 'ses':
-                    s.ses = value
+                    s.ses = value_raw
                 elif key == 'auid':
-                    s.auid = value
+                    s.auid = value_raw
                 elif key == 'exit':
                     s.exit = urllib.quote(value)
                 elif key == 'success':
                     s.success = value
                 elif key == 'a0':
-                    s.a0 = urllib.quote(value)
+                    s.a0 = urllib.quote(value_raw)
                 elif key == 'a1':
-                    s.a1 = urllib.quote(value)
+                    s.a1 = urllib.quote(value_raw)
                 elif key == 'a2':
-                    s.a2 = urllib.quote(value)
+                    s.a2 = urllib.quote(value_raw)
 
             if not au.next_field():
                 break
