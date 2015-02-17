@@ -8,7 +8,8 @@ srcdir = os.getenv('srcdir')
 #  LOAD_PATH: Location of the audit-... install library files containing
 #             the python2.6/site-packages
 #
-DATA_FILE = "A"
+DATA_FILE = "/var/log/audit/audit.log"
+#DATA_FILE = "./D"
 LOAD_PATH = '/home/scottc/development/audit_watch/AUDIT2.2.2/lib64/python2.6/site-packages'
 
 import sys
@@ -95,7 +96,7 @@ def feed_callback(au, cb_event_type, event_cnt):
                 if record_count == 1:
                     ses_holder = syscall_object.ses
                     pid_holder = syscall_object.pid
-
+                
                 print '%s:%s:%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % (event_count, event_rec_count, record_count, syscall_object.flavor, syscall_object.type, syscall_object.time, syscall_object.node, syscall_object.ses, syscall_object.auid, syscall_object.syscall, syscall_object.key, syscall_object.comm, syscall_object.exe, syscall_object.a0, syscall_object.a1, syscall_object.a2, syscall_object.uid, syscall_object.gid, syscall_object.euid, syscall_object.egid, syscall_object.fsuid, syscall_object.fsgid, syscall_object.suid, syscall_object.sgid, syscall_object.pid, syscall_object.ppid, syscall_object.tty, syscall_object.success, syscall_object.exit)
 
             ### ------------------------------ ###
