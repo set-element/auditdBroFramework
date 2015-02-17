@@ -58,15 +58,16 @@ class init:
         while True:
             key = au.get_field_name()
             value = au.interpret_field()
+            value_raw = au.get_field_str()
 
             if key in data_filter:
                 #print "key=" , key, " value=", value 
                 if key == 'node':
                     s.node = urllib.quote(value) 
                 elif key == 'ses': 
-                    s.ses = value
+                    s.ses = value_raw
                 elif key == 'auid': 
-                    s.auid = value
+                    s.auid = value_raw
                 elif key == 'type': 
                     s.type = value
                 elif key == 'egid':
@@ -86,7 +87,7 @@ class init:
                 elif key == 'uid': 
                     s.uid = value
                 elif key == 'pid':
-                    s.pid = value
+                    s.pid = value_raw
                 elif key == 'success': 
                     s.success = value
                 elif key == 'exit': 
