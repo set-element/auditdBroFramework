@@ -31,19 +31,36 @@
 
 # #### -- ## Auditd Rules ## -- #####
 
-# NETWORK: network related system calls to gather socket data from 
-#  inbound and outbound traffic. 
+# NETWORK: network related system calls to gather socket data from
+#  inbound and outbound traffic.
 # start mod5
+# bind: EACCES The address is protected, and the user is not the superuser.
+#superuserEACCES Search permission is denied on a component of the path prefix. (AF_UNIX)
+#AF_UNIXEFAULT addr points outside the user’s accessible address space.
+# connect: EACCES, EPERM The user tried to connect to a broadcast address without having the
+#thesocket broadcast flag enabled or the connection request failed because of a local firewall rule.
+# accept: EPERM  Firewall rules forbid connection.
+#
+
+-a always,exit -F arch=b64 -S bind -S connect -S accept -S accept4 -S listen -S socketpair -S socket -F exit=-EACCES -k SYS_NET_ERR
+-a always,exit -F arch=b64 -S bind -S connect -S accept -S accept4 -S listen -S socketpair -S socket -F exit=-EPERM  -k SYS_NET_ERR
 -a always,exit -F arch=b64 -S bind -S connect -S accept -S accept4 -S listen -S socketpair -S socket -k SYS_NET
 # end mod5
 
 # MISC OS:
 #
 #  init_module - Initialize a loadable module entry
+#     module-EPERM The user must have administrator module modification capabilities.
 #  delete_module - Delete a loadable module
+#     loadable-EPERM The user must have administrator module modification capabilities.
 #  pivot_root - change the root file system
-#  
+#  		-EPERM  The calling process does not have the CAP_SYS_ADMIN capability.
+#  mount: -EACCES A  component  of  a  path was not searchable;
+#  mknod: -EPERM  mode requested creation of something other than a regular file, FIFO (named pipe), or Unix domain socket
+
 # start mod4
+-a always,exit -F arch=b64 -S init_module -S delete_module -S mount -S pivot_root -S chroot -S mknod -F exit=-EPERM   -k SYS_OS_ERR
+#-a always,exit -F arch=b64 -S init_module -S delete_module -S mount -S pivot_root -S chroot -S mknod -F exit=-EACCESS -k SYS_OS_ERR
 -a always,exit -F arch=b64 -S init_module -S delete_module -S mount -S pivot_root -S chroot -S mknod -k SYS_OS
 # end mod4
 
@@ -51,33 +68,38 @@
 #
 #   mknodat - create a special or ordinary file relative to a directory file descriptor
 #   linkat - create a file link relative to directory file descriptors
-#   
+#
 # start mod2
--a always,exit -F arch=b64 -S creat -S mkdir -S mknod -S link -S symlink -S mknodat -S linkat -S symlinkat -F exit=-EACCES -k SYS_FILE_CREATE
--a always,exit -F arch=b64 -S mkdir -S mkdirat -S link -S symlink -F exit=-EPERM -k SYS_FILE_CREATE
+-a always,exit -F arch=b64 -S creat -S mkdir -S mknod -S link -S symlink -S mknodat -S linkat -S symlinkat -F exit=-EACCES -k SYS_FILE_C
+REATE_ERR
+-a always,exit -F arch=b64 -S mkdir -S mkdirat -S link -S symlink -F exit=-EPERM -k SYS_FILE_CREATE_ERR
 #
 # unsuccessful open
--a always,exit -F arch=b64 -S open -S openat -F exit=-EACCES -k SYS_FILE_OPEN
--a always,exit -F arch=b64 -S open -S openat -F exit=-EPERM -k SYS_FILE_OPEN
+-a always,exit -F arch=b64 -S open -S openat -F exit=-EACCES -k SYS_FILE_OPEN_ERR
+-a always,exit -F arch=b64 -S open -S openat -F exit=-EPERM  -k SYS_FILE_OPEN_ERR
 # unsuccessful modifications
--a always,exit -F arch=b64 -S rename -S renameat -S truncate -S chmod -F exit=-EACCES -k SYS_FILE_MOD_FAIL
--a always,exit -F arch=b64 -S rename -S renameat -S truncate -S chmod -F exit=-EPERM -k SYS_FILE_MOD_FAIL
+-a always,exit -F arch=b64 -S rename -S renameat -S truncate -S chmod -F exit=-EACCES -k SYS_FILE_MOD_ERR
+-a always,exit -F arch=b64 -S rename -S renameat -S truncate -S chmod -F exit=-EPERM  -k SYS_FILE_MOD_ERR
 # all chmods/chown, successful or otherwise
--a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -k SYS_FILE_PERM
+-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -F exit=-EACCES           -k SYS_FILE_PERM_ERR
+-a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -F exit=-EACCES -k SYS_FILE_PERM_ERR
+-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat           -k SYS_FILE_PERM
 -a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -k SYS_FILE_PERM
 # very special hello for the extended attribute set
 -a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -k SYS_FILE_XPERM
 # unsuccessful deletion
--a always,exit -F arch=b64 -S rmdir -S unlink -S unlinkat -F exit=-EACCES -k SYS_FILE_DELETE_FAIL
--a always,exit -F arch=b64 -S rmdir -S unlink -S unlinkat -F exit=-EPERM -k SYS_FILE_DELETE_FAIL
+-a always,exit -F arch=b64 -S rmdir -S unlink -S unlinkat -F exit=-EACCES -k SYS_FILE_DELETE_ERR
+-a always,exit -F arch=b64 -S rmdir -S unlink -S unlinkat -F exit=-EPERM  -k SYS_FILE_DELETE_ERR
 # end mod2
 
 # start mod3
 # EXECUTIN: anything that gets executed should get logged
 -a always,exit -F arch=b64 -S execve -k SYS_EXEC
 # suid invocation
+-a always,exit -F arch=b64 -S setuid -S setgid -S setreuid -S setregid -F exit=EPERM -k SYS_SUID_ERR
 -a always,exit -F arch=b64 -S setuid -S setgid -S setreuid -S setregid -k SYS_SUID
 # TIME:
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -S clock_settime -F exit=-EPERM -k SYS_TIME_ERR
 -a always,exit -F arch=b64 -S adjtimex -S settimeofday -S clock_settime -k SYS_TIME
 # end mod3 
 
