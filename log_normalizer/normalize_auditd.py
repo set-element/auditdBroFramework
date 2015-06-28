@@ -38,8 +38,14 @@ INTERNAL_RE = re.compile('DAEMON|SERVICE')
 SOCKET_RE = re.compile('SOCKADDR')
 EXECVE_RE = re.compile('EXECVE')
 
+place_object = PLACE_OBJ.init()
+user_object = USER_OBJ.init()
+syscall_object = SYSCALL_OBJ.init()
+socket_object = SOCK_OBJ.init()
+execve_object = EXECVE_OBJ.init()
+generic_object = GENERIC_OBJ.init()
+
 event_count = 0
-sleep_count = 0
 #
 def none_to_null(s):
     'used so output matches C version'
@@ -51,7 +57,13 @@ def none_to_null(s):
 def feed_callback(au, cb_event_type, event_cnt):
 
     global event_count
-    global sleep_count
+
+    global place_object
+    global user_object
+    global syscall_object
+    global socket_object
+    global execve_object
+    global generic_object
 
     while True:
 
@@ -72,13 +84,11 @@ def feed_callback(au, cb_event_type, event_cnt):
         while True:
         
             if WHERE_RE.match(audit.audit_msg_type_to_name(au.get_type()) ) :
-                place_object = PLACE_OBJ.init()
                 place_object = place_object.load(au) 
                 print "%s:%s:%s %s %s %s %s %s %s %s %s %s %s %s %s" % (event_count, event_rec_count, record_count, place_object.flavor, place_object.type, place_object.time, place_object.node, ses_holder, pid_holder, place_object.cwd, place_object.path_name, place_object.inode, place_object.mode, place_object.ouid, place_object.ogid)
 
             ### ------------------------------ ###
             elif WHO_RE.match(audit.audit_msg_type_to_name(au.get_type()) ) :
-                user_object = USER_OBJ.init()
                 user_object = user_object.load(au)
                 if record_count == 1:
                     ses_holder = user_object.ses
@@ -91,7 +101,6 @@ def feed_callback(au, cb_event_type, event_cnt):
 
             ### ------------------------------ ###
             elif SYSCALL_RE.match(audit.audit_msg_type_to_name(au.get_type()) ) :
-                syscall_object = SYSCALL_OBJ.init()
                 syscall_object = syscall_object.load(au)
                 if record_count == 1:
                     ses_holder = syscall_object.ses
@@ -101,19 +110,16 @@ def feed_callback(au, cb_event_type, event_cnt):
 
             ### ------------------------------ ###
             elif SOCKET_RE.match(audit.audit_msg_type_to_name(au.get_type()) ) :
-                socket_object = SOCK_OBJ.init()
                 socket_object = socket_object.load(au)
                 print '%s:%s:%s %s %s %s %s %s %s %s' % (event_count, event_rec_count, record_count, socket_object.flavor, socket_object.type, socket_object.time, socket_object.node, ses_holder, pid_holder, socket_object.saddr) 
 
             ### ------------------------------ ###
             elif EXECVE_RE.match(audit.audit_msg_type_to_name(au.get_type()) ) :
-                execve_object = EXECVE_OBJ.init()
                 execve_object = execve_object.load(au)
                 print '%s:%s:%s %s %s %s %s %s %s %s %s' % (event_count, event_rec_count, record_count, execve_object.flavor, execve_object.type, execve_object.time, execve_object.node, ses_holder, pid_holder, execve_object.argc, execve_object.arg)
 
             ### ------------------------------ ###
             else:
-                generic_object = GENERIC_OBJ.init()
                 generic_object = generic_object.load(au)
                 if record_count == 1:
                     ses_holder = generic_object.ses
