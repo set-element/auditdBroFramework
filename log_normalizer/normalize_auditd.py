@@ -145,13 +145,7 @@ chunk_len = 3
 
 t=FileTail(DATA_FILE)
 for s in t:
-    s_len = len(s)
-    beg = 0
-    while beg < s_len:
-        end = min(s_len, beg + chunk_len)
-        data = s[beg:end]
-        beg += chunk_len
-        au.feed(data)
+    au.feed(s)
 
 au.flush_feed()
 

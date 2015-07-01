@@ -33,13 +33,12 @@ class FileTail(object):
 
     def __init__(self,
                  file,                  # filename to monitor
-                 #start_pos="end",       # where to initially start reading from
-                 start_pos="head",       # where to initially start reading from
+                 start_pos="end",       # where to initially start reading from, "head" or "end"
                  #max_buffer_size=16384, # Max buffer size hint (Not exact; @see file.readlines)
                  interval=0.1,          # sleep time to wait if no data is present (dynamically changes)
                  #min_interval=0.01,     # min sleep time
-                 max_interval=5,        # max sleep time
-                 max_wait=60,           # max time to wait with no data before reopening file
+                 max_interval=1,        # max sleep time
+                 max_wait=20,           # max time to wait with no data before reopening file
                  reopen_check="inode",  # how to check if file is different (inode or time) - inode does not work on win32
                  encoding="utf-8"       # file encoding
                 ):
