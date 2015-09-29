@@ -1,0 +1,34 @@
+inotail 0.5
+
+  * Output verbose file headers correctly when used in a pipe
+  * Small code cleanups
+
+  -- Tobias Klauser <tklauser@distanz.ch> 2007-09-07 13:30
+
+inotail 0.4
+
+  * Use dynamic buffers of optimal size (st_blksize in struct stat) for
+    filesystem I/O (patch by Folkert van Heusden)
+  * Added handling of EINTR/EAGAIN while watching files for changes (patch by
+    Anthony Martinez)
+  * Better error checking and handling (patch by Folkert van Heusden)
+  * Various cleanups
+
+  -- Tobias Klauser <tklauser@distanz.ch> 2007-06-20 15:00
+
+inotail 0.3
+
+  * Follow files even if they were moved
+  * Fix a problem when tailing more than 4096 bytes/chars at once
+  * Only print the filename once when the -v option is specified
+  * Various small fixes and cleanups
+
+  -- Tobias Klauser <tklauser@distanz.ch> 2007-04-17 13:44
+
+inotail 0.2
+
+  * Support for the -n/-c +<num> options (tail relative to start of file)
+  * Copyright and license cleanup
+  * Various fixes
+
+  -- Tobias Klauser <tklauser@distanz.ch.ch> 2006-11-30 17:56

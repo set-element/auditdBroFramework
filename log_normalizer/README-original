@@ -1,0 +1,46 @@
+ inotail - inotify enhanced tail
+o===============================o
+
+inotail is a replacement for the 'tail' program found in the base installation
+of every Linux/UNIX system. It makes use of the inotify infrastructure in recent
+versions of the Linux kernel to speed up tailing files in the follow mode (the
+'-f' option). Standard tail polls the file every second by default while inotail
+listens to special events sent by the kernel through the inotify API to
+determine whether a file needs to be reread.
+
+Currently inotail is not fully compatible to neither POSIX or GNU tail but might
+be in the future.
+
+Requirements
+------------
+- Linux kernel 2.6.13 or higher with CONFIG_INOTIFY enabled
+- Standard C Library (tested with GNU libc but might work with others too)
+- GCC (other compilers might work but are not tested)
+
+Building and installing inotail
+-------------------------------
+To build inotail type:
+
+	$ make
+
+By default, inotail is installed to /usr/local/bin/, the manpage is installed to
+/usr/local/share/man/man1/. To install the inotail files to these locations type:
+
+	$ make install
+
+To change these locations just set the prefix variable. E.g. to install the
+inotail binary to /usr/ and the manpage to /usr/share/man/ respectively type:
+
+	$ make prefix=/usr install
+
+License
+-------
+inotail is licensed under the terms of the GNU General Public License version 2
+or later. You can find the full text in the file LICENSE in the source tree of
+inotail.
+
+The files inotify.h and inotify-syscalls.h were taken from the source tree of
+the Linux kernel and slightly altered. Both are licensed under the terms of the
+GNU General Public License version 2.
+
+-- Tobias Klauser <tklauser@distanz.ch>

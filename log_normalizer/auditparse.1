@@ -1,0 +1,59 @@
+'\" t
+.\" ** The above line should force tbl to be a preprocessor **
+.\" Man page for inotail
+.\"
+.\" Copyright (c) 2006 Tobias Klauser <tklauser@distanz.ch>
+.\"
+.\" You may distribute under the terms of the GNU General Public
+.\" License as specified in the file COPYING that comes with
+.\" inotail.
+
+.pc
+.TH INOTAIL 1 "2006-08-13" "" "Inotify enhanced tail"
+.SH NAME
+inotail \- A fast and lightweight version of tail using inotify
+.SH SYNOPSIS
+.B inotail
+[OPTION]... [FILE]...
+.SH DESCRIPTION
+.B inotail
+is a replacement for the 'tail' program found in the base installation of every
+Linux/UNIX system. It makes use of the inotify infrastructure in recent versions
+of the Linux kernel to speed up tailing files in the follow mode (the '\-f'
+option). Standard tail polls the file every second by default while inotail
+listens to special events sent by the kernel through the inotify API to
+determine whether a file needs to be reread. \fINote:\fR inotail will not work
+on systems running a kernel without inotify. To enable inotify, please set
+CONFIG_INOTIFY=y in your Linux kernel configuration and recompile it.
+.PP
+Currently inotail is not fully compatible to neither POSIX or GNU tail but might
+be in the future.
+.SH OPTIONS
+.TP
+.B \-c \fIN\fR, \fB\-\-bytes\fR=\fIN\fR
+output the last N bytes. If the first character of N is a '+', begin printing
+with the Nth character from the start of each file.
+.TP
+.B \-f, \fB\-\-follow
+keep the file(s) open and print appended data as the file grows
+.TP
+.B \-n \fIN\fR, \fB\-\-lines\fR=\fIN\fR
+output the last N lines (default: 10) If the first character of N is a '+',
+begin printing with the Nth line from the start of each file.
+.TP
+.B \-v, \fB\-\-verbose
+print headers with file names
+.TP
+.B \-h, \fB\-\-help
+show help and exit
+.TP
+.B \-V, \fB\-\-version
+show inotail version and exit
+.SH AUTHOR
+.PP
+Written by Tobias Klauser
+<tklauser@distanz.ch>
+.SH SEE ALSO
+.PP
+.BR tail(1),
+.BR inotify(7)
