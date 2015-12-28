@@ -40,9 +40,5 @@ uninstall:
 cscope:
 	cscope -b
 
-release:
-	git-archive --format=tar --prefix=auditparse-$(VERSION)/ HEAD | gzip -9v > ../auditparse-$(VERSION).tar.gz
-	git-archive --format=tar --prefix=auditparse-$(VERSION)/ HEAD | bzip2 -9v > ../auditparse-$(VERSION).tar.bz2
-
 clean:
 	rm -f auditparse *.o cscope.*
