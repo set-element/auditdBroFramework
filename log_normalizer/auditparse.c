@@ -42,7 +42,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
-#include <tcpd.h>
+//#include <tcpd.h>
 #include <netdb.h>
 
 #include "inotify.h"
