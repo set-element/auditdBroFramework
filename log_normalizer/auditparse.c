@@ -1,5 +1,5 @@
 /* Author: Scott Campbell
- *  2016/08/26
+ *  2015/12/15
  *
  * Light weight program to read native linux auditd logs,
  *   translate them into a more portable format and write
@@ -58,8 +58,8 @@
 
 #define PROGRAM_NAME "inotail"
 #define DEFAULT_BUFFER_SIZE 4096
-#define STUN_ERROR_MOD 10	
-#define STUNNEL_PORT 7799
+#define STUN_ERROR_MOD 10
+#define STUNNEL_PORT 799
 #define STUNNEL_HOST "localhost"
 
 /* inotify event buffer length for one file */
@@ -139,7 +139,6 @@ static char* encode_string(const char* src, const int len)
 
         /* We do not test the return here since it is done via the call itself. */
         modp_burl_encode(url_enc_string, src, len);
-
         return url_enc_string;
 }
 
@@ -667,7 +666,7 @@ static void process_sock_obj(auparse_state_t *_au, int *event_cnt, int num_recor
 	char* node = "localhost";
 	char* t_node = NULL;
 	char* saddr = "NULL";
-	char* t_saddr = "NULL";
+	char* t_saddr = NULL;
 
 	int num_fields = auparse_get_num_fields(_au) - 1;
 	int n;
@@ -695,6 +694,7 @@ static void process_sock_obj(auparse_state_t *_au, int *event_cnt, int num_recor
 
 		if ( strcmp(field_name, F_SADDR) == 0 ) {
 			saddr = (char*)auparse_interpret_field(_au);
+
 			if ( saddr != NULL ) {
 				t_saddr = encode_string( saddr, strlen(saddr));
 				}
@@ -973,7 +973,6 @@ static void auparse_callback(auparse_state_t *_au, auparse_cb_event_t cb_event_t
   if (cb_event_type == AUPARSE_CB_EVENT_READY) {
 
      if (auparse_first_record(_au) <= 0) {
-        printf("can't get first record\n");
         return;
      }
 
@@ -1030,7 +1029,8 @@ static void auparse_callback(auparse_state_t *_au, auparse_cb_event_t cb_event_t
 	// printf("\n");
 
 	record_cnt++;
-	  } while(auparse_next_record(_au) > 0);  // end of do
+
+	} while(auparse_next_record(_au) > 0);  // end of do
 
 		(*event_cnt)++;
 
@@ -1336,7 +1336,6 @@ static int handle_inotify_event(struct inotify_event *inev, struct file_struct *
 		fprintf(stderr, "File '%s' moved.\n", f->name);
 
 		// SCOTT
-		fprintf(stderr, "Closing file '%s'\n", f->name);
 		close(f->fd);
 
 		free(files);
@@ -1345,10 +1344,8 @@ static int handle_inotify_event(struct inotify_event *inev, struct file_struct *
 		new_files[0].name = "/var/log/audit/audit.log";
 		setup_file(&new_files[0]);
 		int tret;
-		fprintf(stderr, "Opening tail file '%s'\n", new_files[0].name);
 		tail_file(new_files, DEFAULT_N_LINES, M_LINES, 1);
 		watch_files(new_files, 1);
-		//fprintf(stderr, "Opening tail file '%s' complete\n", new_files[0].name);
 		return 0;
 	} else if (inev->mask & IN_UNMOUNT) {
 		fprintf(stderr, "Device containing file '%s' unmounted.\n", f->name);
