@@ -8,6 +8,7 @@
 #define _INOTAIL_H
 
 #include <sys/types.h>
+#include <auparse.h>
 
 /* Number of items to tail. */
 #define DEFAULT_N_LINES 10
@@ -103,4 +104,6 @@ int user_types_count = 12;
 static int tail_file(struct file_struct *f, unsigned long n_units, char mode, char forever);
 static int handle_inotify_event(struct inotify_event *inev, struct file_struct *f);
 static int watch_files(struct file_struct *files, int n_files);
-
+const char* auparse_interpret_field_wrap(auparse_state_t *_au);
+const char* auparse_get_field_str_wrap(auparse_state_t *_au);
+const char* auparse_get_field_name_wrap(auparse_state_t *_au);
