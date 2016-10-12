@@ -238,10 +238,10 @@ static int sis_opentcp(char *hostname, int portnum)
 /* this may seem a bit overmuch, but there are some issues with the auparse_interpret_field function
    not providing anything but a NULL back which makes all the smoke leak out...
  */
-const char auparse_interpret_field_wrap(auparse_state_t *au)
+const char* auparse_interpret_field_wrap(auparse_state_t *_au)
 {
-	char* ret_val;
-	char* nval = "NULL";
+	const char* ret_val;
+	const char* nval = "NULL";
 
 	ret_val = (char*)auparse_interpret_field(_au);
 	if ( ret_val == NULL ) {
@@ -250,6 +250,35 @@ const char auparse_interpret_field_wrap(auparse_state_t *au)
 	else
 		return ret_val;
 }
+
+const char* auparse_get_field_str_wrap(auparse_state_t *_au)
+{
+	const char* ret_val;
+	const char* nval = "NULL";
+
+	ret_val = (char*)auparse_get_field_str(_au);
+	if ( ret_val == NULL ) {
+		return nval;
+		}
+	else
+		return ret_val;
+}
+
+const char* auparse_get_field_name_wrap(auparse_state_t *_au)
+{
+	const char* ret_val;
+	const char* nval = "NULL";
+
+	ret_val = (char*)auparse_get_field_name(_au);
+	if ( ret_val == NULL ) {
+		return nval;
+		}
+	else
+		return ret_val;
+}
+/* auparse_get_num_fields: returns error as n=0 */
+
+/* end auparse wrapper set */
 
 static int s_write(char *buffer)
 {
@@ -326,16 +355,21 @@ static void process_place_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 	int num_fields = auparse_get_num_fields(_au) - 1;
 	int n;
 
+	/* test error condition */
+	if ( num_fields == -1 )
+		return;
+
 	const au_event_t *e = auparse_get_timestamp(_au);
 
 	if (e == NULL)
 		return;
 
-	auparse_first_field(_au);
+	if ( auparse_first_field(_au) == 0 )
+		return;
 
 	for ( n = 0 ; n <= num_fields; n++ ) {
 
-		char* field_name = (char*)auparse_get_field_name(_au);
+		char* field_name = (char*)auparse_get_field_name_wrap(_au);
 
 		if ( strcmp(field_name,F_TYPE) == 0 ) {
 			type = (char*)auparse_interpret_field_wrap(_au);
@@ -405,8 +439,6 @@ static void process_user_obj(auparse_state_t *_au, int *event_cnt, int num_recor
 	char* sgid = "NULL";
 	char* uid = "NULL";
 	char* pid = "NULL";
-	char* ouid = "NULL";
-	char* ogid = "NULL";
 
 	char* success = "NULL";
 	char* xit = "NULL";
@@ -418,16 +450,21 @@ static void process_user_obj(auparse_state_t *_au, int *event_cnt, int num_recor
 	int num_fields = auparse_get_num_fields(_au) - 1;
 	int n;
 
+	/* test error condition */
+	if ( num_fields == -1 )
+		return;
+
 	const au_event_t *e = auparse_get_timestamp(_au);
 
 	if (e == NULL)
 		return;
 
-	auparse_first_field(_au);
+	if ( auparse_first_field(_au) == 0 )
+		return;
 
 	for ( n = 0 ; n <= num_fields; n++ ) {
 
-		char* field_name = (char*)auparse_get_field_name(_au);
+		char* field_name = (char*)auparse_get_field_name_wrap(_au);
 
 		if ( strcmp(field_name,F_TYPE) == 0 ) {
 			type = (char*)auparse_interpret_field_wrap(_au);
@@ -440,13 +477,13 @@ static void process_user_obj(auparse_state_t *_au, int *event_cnt, int num_recor
 			}
 
 		if ( strcmp(field_name, F_SES) == 0 )
-			ses = (char*)auparse_get_field_str(_au);
+			ses = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_EGID) == 0 )
 			egid = (char*)auparse_interpret_field_wrap(_au);
 
 		if ( strcmp(field_name, F_AUID) == 0 )
-			auid = (char*)auparse_get_field_str(_au);
+			auid = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_EUID) == 0 )
 			euid = (char*)auparse_interpret_field_wrap(_au);
@@ -470,13 +507,7 @@ static void process_user_obj(auparse_state_t *_au, int *event_cnt, int num_recor
 			uid = (char*)auparse_interpret_field_wrap(_au);
 
 		if ( strcmp(field_name, F_PID) == 0 )
-			pid = (char*)auparse_get_field_str(_au);
-
-		if ( strcmp(field_name, F_AUID) == 0 )
-			ouid = (char*)auparse_interpret_field_wrap(_au);
-
-		if ( strcmp(field_name, F_OGID) == 0 )
-			ogid = (char*)auparse_interpret_field_wrap(_au);
+			pid = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_SUCCESS) == 0 )
 			success = (char*)auparse_interpret_field_wrap(_au);
@@ -553,16 +584,21 @@ static void process_syscall_obj(auparse_state_t *_au, int *event_cnt, int num_re
 	int num_fields = auparse_get_num_fields(_au) - 1;
 	int n;
 
+	/* test error condition */
+	if ( num_fields == -1 )
+		return;
+
 	const au_event_t *e = auparse_get_timestamp(_au);
 
 	if (e == NULL)
 		return;
 
-	auparse_first_field(_au);
+	if ( auparse_first_field(_au) == 0 )
+		return;
 
 	for ( n = 0 ; n <= num_fields; n++ ) {
 
-		char* field_name = (char*)auparse_get_field_name(_au);
+		char* field_name = (char*)auparse_get_field_name_wrap(_au);
 
 		if ( strcmp(field_name,F_TYPE) == 0 ) {
 			type = (char*)auparse_interpret_field_wrap(_au);
@@ -575,13 +611,13 @@ static void process_syscall_obj(auparse_state_t *_au, int *event_cnt, int num_re
 			}
 
 		if ( strcmp(field_name, F_SES) == 0 )
-			ses = (char*)auparse_get_field_str(_au);
+			ses = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_EGID) == 0 )
 			egid = (char*)auparse_interpret_field_wrap(_au);
 
 		if ( strcmp(field_name, F_AUID) == 0 )
-			auid = (char*)auparse_get_field_str(_au);
+			auid = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_EUID) == 0 )
 			euid = (char*)auparse_interpret_field_wrap(_au);
@@ -610,26 +646,26 @@ static void process_syscall_obj(auparse_state_t *_au, int *event_cnt, int num_re
 			}
 
 		if ( strcmp(field_name, F_A0) == 0 ) {
-			a0 = (char*)auparse_get_field_str(_au);
+			a0 = (char*)auparse_get_field_str_wrap(_au);
 			t_a0 = encode_string( a0, strlen(a0));
 			}
 
 		if ( strcmp(field_name, F_A1) == 0 ) {
-			a1 = (char*)auparse_get_field_str(_au);
+			a1 = (char*)auparse_get_field_str_wrap(_au);
 			t_a1 = encode_string( a1, strlen(a1));
 			}
 
 		if ( strcmp(field_name, F_A2) == 0 ) {
-			a2 = (char*)auparse_get_field_str(_au);
+			a2 = (char*)auparse_get_field_str_wrap(_au);
 			t_a2 = encode_string( a2, strlen(a2));
 			}
 
 
 		if ( strcmp(field_name, F_PID) == 0 )
-			pid = (char*)auparse_get_field_str(_au);
+			pid = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_PPID) == 0 )
-			ppid = (char*)auparse_get_field_str(_au);
+			ppid = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_SUCCESS) == 0 )
 			success = (char*)auparse_interpret_field_wrap(_au);
@@ -688,16 +724,21 @@ static void process_sock_obj(auparse_state_t *_au, int *event_cnt, int num_recor
 	int num_fields = auparse_get_num_fields(_au) - 1;
 	int n;
 
+	/* test error condition */
+	if ( num_fields == -1 )
+		return;
+
 	const au_event_t *e = auparse_get_timestamp(_au);
 
 	if (e == NULL)
 		return;
 
-	auparse_first_field(_au);
+	if ( auparse_first_field(_au) == 0 )
+		return;
 
 	for ( n = 0 ; n <= num_fields; n++ ) {
 
-		char* field_name = (char*)auparse_get_field_name(_au);
+		char* field_name = (char*)auparse_get_field_name_wrap(_au);
 
 		if ( strcmp(field_name,F_TYPE) == 0 ) {
 			type = (char*)auparse_interpret_field_wrap(_au);
@@ -740,16 +781,21 @@ static void process_execv_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 	int num_fields = auparse_get_num_fields(_au) - 1;
 	int n;
 
+	/* test error condition */
+	if ( num_fields == -1 )
+		return;
+
 	const au_event_t *e = auparse_get_timestamp(_au);
 
 	if (e == NULL)
 		return;
 
-	auparse_first_field(_au);
+	if ( auparse_first_field(_au) == 0 )
+		return;
 
 	for ( n = 0 ; n <= num_fields; n++ ) {
 
-		char* field_name = (char*)auparse_get_field_name(_au);
+		char* field_name = (char*)auparse_get_field_name_wrap(_au);
 
 		if ( strcmp(field_name,F_TYPE) == 0 ) {
 			type = (char*)auparse_interpret_field_wrap(_au);
@@ -820,16 +866,21 @@ static void process_generic_obj(auparse_state_t *_au, int *event_cnt, int num_re
 	int num_fields = auparse_get_num_fields(_au) - 1;
 	int n;
 
+	/* test error condition */
+	if ( num_fields == -1 )
+		return;
+
 	const au_event_t *e = auparse_get_timestamp(_au);
 
 	if (e == NULL)
 		return;
 
-	auparse_first_field(_au);
+	if ( auparse_first_field(_au) == 0 )
+		return;
 
 	for ( n = 0 ; n <= num_fields; n++ ) {
 
-		char* field_name = (char*)auparse_get_field_name(_au);
+		char* field_name = (char*)auparse_get_field_name_wrap(_au);
 
 		if ( strcmp(field_name,F_TYPE) == 0 ) {
 			type = (char*)auparse_interpret_field_wrap(_au);
@@ -842,13 +893,13 @@ static void process_generic_obj(auparse_state_t *_au, int *event_cnt, int num_re
 			}
 
 		if ( strcmp(field_name, F_SES) == 0 )
-			ses = (char*)auparse_get_field_str(_au);
+			ses = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_EGID) == 0 )
 			egid = (char*)auparse_interpret_field_wrap(_au);
 
 		if ( strcmp(field_name, F_AUID) == 0 )
-			auid = (char*)auparse_get_field_str(_au);
+			auid = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_EUID) == 0 )
 			euid = (char*)auparse_interpret_field_wrap(_au);
@@ -877,25 +928,25 @@ static void process_generic_obj(auparse_state_t *_au, int *event_cnt, int num_re
 			}
 
 		if ( strcmp(field_name, F_A0) == 0 ) {
-			a0 = (char*)auparse_get_field_str(_au);
+			a0 = (char*)auparse_get_field_str_wrap(_au);
 			t_a0 = encode_string( a0, strlen(a0));
 			}
 
 		if ( strcmp(field_name, F_A1) == 0 ) {
-			a1 = (char*)auparse_get_field_str(_au);
+			a1 = (char*)auparse_get_field_str_wrap(_au);
 			t_a1 = encode_string( a1, strlen(a1));
 			}
 
 		if ( strcmp(field_name, F_A2) == 0 ) {
-			a2 = (char*)auparse_get_field_str(_au);
+			a2 = (char*)auparse_get_field_str_wrap(_au);
 			t_a2 = encode_string( a2, strlen(a2));
 			}
 
 		if ( strcmp(field_name, F_PID) == 0 )
-			pid = (char*)auparse_get_field_str(_au);
+			pid = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_PPID) == 0 )
-			ppid = (char*)auparse_get_field_str(_au);
+			ppid = (char*)auparse_get_field_str_wrap(_au);
 
 		if ( strcmp(field_name, F_SUCCESS) == 0 )
 			success = (char*)auparse_interpret_field_wrap(_au);
@@ -1028,19 +1079,6 @@ static void auparse_callback(auparse_state_t *_au, auparse_cb_event_t cb_event_t
 	     if (e == NULL) {
           return;
           }
-
-	// printf("    event time: %u.%u:%lu, host=%s\n",
-	//                 (unsigned)e->sec,
-	//                 e->milli, e->serial,
-	//                 e->host ? e->host : "?");
-	// auparse_first_field(au);
-	// do {
-	//         printf("        %s=%s (%s)\n",
-	//                auparse_get_field_name(au),
-	//                auparse_get_field_str(au),
-	//                auparse_interpret_field(au));
-	// } while (auparse_next_field(au) > 0);
-	// printf("\n");
 
 	record_cnt++;
 
@@ -1357,7 +1395,7 @@ static int handle_inotify_event(struct inotify_event *inev, struct file_struct *
 		new_files = emalloc( sizeof(struct file_struct) );
 		new_files[0].name = "/var/log/audit/audit.log";
 		setup_file(&new_files[0]);
-		int tret;
+		
 		tail_file(new_files, DEFAULT_N_LINES, M_LINES, 1);
 		watch_files(new_files, 1);
 		return 0;
