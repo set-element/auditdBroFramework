@@ -84,8 +84,8 @@ char pid_holder[256];
 
 int sis_socket = -1;		  /* socket test varible */
 int sis_connect = -1;		  /* connect test variable */
-int stun_conn_error = 0;	  /* track the number of connection errors to the stunnel */
-int stun_write_error = 0;	  /* track the number of write errors to the stunnel */
+int stun_conn_error = 0;	  /* track the number of connection errors to the transport */
+int stun_write_error = 0;	  /* track the number of write errors to the transport */
 
 char msgbuf[4*DEFAULT_BUFFER_SIZE];
 
@@ -244,6 +244,7 @@ const char* auparse_interpret_field_wrap(auparse_state_t *_au)
 	const char* nval = "NULL";
 
 	ret_val = (char*)auparse_interpret_field(_au);
+
 	if ( ret_val == NULL ) {
 		return nval;
 		}
@@ -270,6 +271,7 @@ const char* auparse_get_field_name_wrap(auparse_state_t *_au)
 	const char* nval = "NULL";
 
 	ret_val = (char*)auparse_get_field_name(_au);
+
 	if ( ret_val == NULL ) {
 		return nval;
 		}
@@ -371,7 +373,7 @@ static void process_place_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 
 		char* field_name = (char*)auparse_get_field_name_wrap(_au);
 
-		if ( strcmp(field_name,F_TYPE) == 0 ) {
+		if ( strcmp(field_name, F_TYPE) == 0 ) {
 			type = (char*)auparse_interpret_field_wrap(_au);
 			t_type = encode_string( type, strlen(type));
 			}
@@ -659,7 +661,6 @@ static void process_syscall_obj(auparse_state_t *_au, int *event_cnt, int num_re
 			a2 = (char*)auparse_get_field_str_wrap(_au);
 			t_a2 = encode_string( a2, strlen(a2));
 			}
-
 
 		if ( strcmp(field_name, F_PID) == 0 )
 			pid = (char*)auparse_get_field_str_wrap(_au);
@@ -1395,7 +1396,11 @@ static int handle_inotify_event(struct inotify_event *inev, struct file_struct *
 		new_files = emalloc( sizeof(struct file_struct) );
 		new_files[0].name = "/var/log/audit/audit.log";
 		setup_file(&new_files[0]);
-		
+
+	    // Take a sec here to let the new file get
+		//  set up by the OS - there are problems with this
+		//  asking just a bit too soon.
+		sleep(1);
 		tail_file(new_files, DEFAULT_N_LINES, M_LINES, 1);
 		watch_files(new_files, 1);
 		return 0;
