@@ -770,6 +770,8 @@ static void process_sock_obj(auparse_state_t *_au, int *event_cnt, int num_recor
 	return;
 }
 
+
+
 static void process_execv_obj(auparse_state_t *_au, int *event_cnt, int num_records, int record_cnt)
 {
 	char* type = "NULL";
@@ -777,7 +779,15 @@ static void process_execv_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 	char* node = "localhost";
 	char* t_node = NULL;
 	char* argc = "NULL";
-	char* arg = "NULL";
+	char* a0 = "NULL";
+	char* t_a0 = NULL;
+	char* a1 = "NULL";
+	char* t_a1 = NULL;
+	char* a2 = "NULL";
+	char* t_a2 = NULL;
+	char* a3 = "NULL";
+	char* t_a3 = NULL;
+//	char* arg = "NULL";
 
 	int num_fields = auparse_get_num_fields(_au) - 1;
 	int n;
@@ -811,14 +821,46 @@ static void process_execv_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 		if ( strcmp(field_name, F_ARGC) == 0 )
 			argc = (char*)auparse_interpret_field_wrap(_au);
 
-		if ( strcmp(field_name, F_ARG) == 0 )
-			arg = (char*)auparse_interpret_field_wrap(_au);
+
+		/* Few notes on the arguments - A_A0 is always the 
+		 *   name of the executable since it is the first
+		 *   argument sent to the exec call.
+		 * Since this is redundant, we will only provide
+		 *   a1-a3 as the role of this call is to supply
+		 *   exec arguments rather than the whole line.
+		 */
+
+		if ( strcmp(field_name, F_A0) == 0 ) {
+			a0 = (char*)auparse_get_field_str_wrap(_au);
+			t_a0 = encode_string( a0, strlen(a0));
+			}
+
+		if ( strcmp(field_name, F_A1) == 0 ) {
+			a1 = (char*)auparse_get_field_str_wrap(_au);
+			t_a1 = encode_string( a1, strlen(a1));
+			//printf("	Processing t_a1: %s\n", t_a1);
+			}
+
+		if ( strcmp(field_name, F_A2) == 0 ) {
+			a2 = (char*)auparse_get_field_str_wrap(_au);
+			t_a2 = encode_string( a2, strlen(a2));
+			//printf("	Processing t_a2: %s\n", t_a2);
+			}
+
+		if ( strcmp(field_name, F_A3) == 0 ) {
+			a3 = (char*)auparse_get_field_str_wrap(_au);
+			t_a3 = encode_string( a3, strlen(a3));
+			//printf("	Processing t_a3: %s\n", t_a3);
+			}
+		//if ( strcmp(field_name, F_ARG) == 0 )
+		//	arg = (char*)auparse_interpret_field_wrap(_au);
 
 		auparse_next_field(_au);
 		}
 
 	bzero(msgbuf, sizeof(msgbuf));
-	snprintf(msgbuf, sizeof(msgbuf) - 1, "NERSCAUD %i:%i:%i EXEC_OBJ %s %u.%u %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses_holder, pid_holder, argc, arg);
+	//printf("NERSCAUD %i:%i:%i EXEC_OBJ %s %u.%u %s %s %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses_holder, pid_holder, argc, t_a1, t_a2, t_a3);
+	snprintf(msgbuf, sizeof(msgbuf) - 1, "NERSCAUD %i:%i:%i EXEC_OBJ %s %u.%u %s %s %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses_holder, pid_holder, argc, t_a1, t_a2, t_a3);
 	s_write(msgbuf);
 
 	free(t_type);
@@ -1067,6 +1109,7 @@ static void auparse_callback(auparse_state_t *_au, auparse_cb_event_t cb_event_t
 					   break;
 
 				  case EXECVE_OBJ:
+					   /* execve arguments */
 					   process_execv_obj(_au, event_cnt, num_records, record_cnt);
 					   break;
 
@@ -1587,3 +1630,4 @@ int main(int argc, char **argv)
 
 	return ret;
 }
+
