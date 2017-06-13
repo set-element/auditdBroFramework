@@ -822,12 +822,10 @@ static void process_execv_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 			argc = (char*)auparse_interpret_field_wrap(_au);
 
 
-		/* Few notes on the arguments - A_A0 is always the 
+		/* Few notes on the arguments - A_A0 should be the
 		 *   name of the executable since it is the first
-		 *   argument sent to the exec call.
-		 * Since this is redundant, we will only provide
-		 *   a1-a3 as the role of this call is to supply
-		 *   exec arguments rather than the whole line.
+		 *   argument sent to the exec call.  Will send it
+		 *   anyway cause might be useful.
 		 */
 
 		if ( strcmp(field_name, F_A0) == 0 ) {
@@ -859,8 +857,8 @@ static void process_execv_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 		}
 
 	bzero(msgbuf, sizeof(msgbuf));
-	//printf("NERSCAUD %i:%i:%i EXEC_OBJ %s %u.%u %s %s %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses_holder, pid_holder, argc, t_a1, t_a2, t_a3);
-	snprintf(msgbuf, sizeof(msgbuf) - 1, "NERSCAUD %i:%i:%i EXEC_OBJ %s %u.%u %s %s %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses_holder, pid_holder, argc, t_a1, t_a2, t_a3);
+	//printf("NERSCAUD %i:%i:%i EXEC_OBJ %s %u.%u %s %s %s %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses_holder, pid_holder, argc, t_a0, t_a1, t_a2, t_a3);
+	snprintf(msgbuf, sizeof(msgbuf) - 1, "NERSCAUD %i:%i:%i EXEC_OBJ %s %u.%u %s %s %s %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses_holder, pid_holder, argc, t_a0, t_a1, t_a2, t_a3);
 	s_write(msgbuf);
 
 	free(t_type);
@@ -1630,4 +1628,3 @@ int main(int argc, char **argv)
 
 	return ret;
 }
-
