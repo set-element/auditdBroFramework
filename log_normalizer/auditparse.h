@@ -39,6 +39,7 @@ int user_types_count = 12;
 #define F_A0       "a0"
 #define F_A1       "a1"
 #define F_A2       "a2"
+#define F_A3       "a3"
 #define F_ARG      "arg"
 #define F_ARGC     "argc"
 #define F_AUID     "auid"

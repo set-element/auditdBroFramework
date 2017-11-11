@@ -1,5 +1,5 @@
 /* Author: Scott Campbell
- *  2015/12/15
+ *  2017/11/10
  *
  * Light weight program to read native linux auditd logs,
  *   translate them into a more portable format and write
@@ -188,6 +188,7 @@ static int sis_opentcp(char *hostname, int portnum)
 		 * We might be waiting for the connection to complete -
 		 *   quick check for that condition.
 		 */
+
 		if (errno == EINPROGRESS) {
 
 			/* sit for 2 seconds */
@@ -279,7 +280,6 @@ const char* auparse_get_field_name_wrap(auparse_state_t *_au)
 		return ret_val;
 }
 /* auparse_get_num_fields: returns error as n=0 */
-
 /* end auparse wrapper set */
 
 static int s_write(char *buffer)
@@ -326,7 +326,6 @@ static int s_write(char *buffer)
 		}
 		else {
 			sent = send(sis_socket, buffer, strlen(buffer), 0);
-
 			err = 1;
 		}
 
@@ -574,6 +573,8 @@ static void process_syscall_obj(auparse_state_t *_au, int *event_cnt, int num_re
 	char* t_a1 = NULL;
 	char* a2 = "NULL";
 	char* t_a2 = NULL;
+	char* a3 = "NULL";
+	char* t_a3 = NULL;
 	char* pid = "NULL";
 	char* ppid = "NULL";
 	char* success = "NULL";
@@ -662,6 +663,11 @@ static void process_syscall_obj(auparse_state_t *_au, int *event_cnt, int num_re
 			t_a2 = encode_string( a2, strlen(a2));
 			}
 
+		if ( strcmp(field_name, F_A3) == 0 ) {
+			a3 = (char*)auparse_get_field_str_wrap(_au);
+			t_a3 = encode_string( a3, strlen(a3));
+			}
+
 		if ( strcmp(field_name, F_PID) == 0 )
 			pid = (char*)auparse_get_field_str_wrap(_au);
 
@@ -695,7 +701,7 @@ static void process_syscall_obj(auparse_state_t *_au, int *event_cnt, int num_re
 		}
 
 	bzero(msgbuf, sizeof(msgbuf));
-	snprintf(msgbuf, sizeof(msgbuf) - 1, "NERSCAUD %i:%i:%i SYSCALL_OBJ %s %u.%u %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses, auid, sysc_name, key, t_comm, t_exe, t_a0, t_a1, t_a2, uid, gid, euid, egid, fsuid, fsgid, suid, sgid, pid, ppid, tty, success, t_xit);
+	snprintf(msgbuf, sizeof(msgbuf) - 1, "NERSCAUD %i:%i:%i SYSCALL_OBJ %s %u.%u %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses, auid, sysc_name, key, t_comm, t_exe, t_a0, t_a1, t_a2, t_a3, uid, gid, euid, egid, fsuid, fsgid, suid, sgid, pid, ppid, tty, success, t_xit);
 	s_write(msgbuf);
 
 	strncpy(ses_holder,ses,holder_size);
@@ -707,6 +713,7 @@ static void process_syscall_obj(auparse_state_t *_au, int *event_cnt, int num_re
 	free(t_a0);
 	free(t_a1);
 	free(t_a2);
+	free(t_a3);
 	free(t_xit);
 	free(t_exe);
 
@@ -787,7 +794,6 @@ static void process_execv_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 	char* t_a2 = NULL;
 	char* a3 = "NULL";
 	char* t_a3 = NULL;
-//	char* arg = "NULL";
 
 	int num_fields = auparse_get_num_fields(_au) - 1;
 	int n;
@@ -822,10 +828,12 @@ static void process_execv_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 			argc = (char*)auparse_interpret_field_wrap(_au);
 
 
-		/* Few notes on the arguments - A_A0 should be the
+		/* Few notes on the arguments - A_A0 is always the 
 		 *   name of the executable since it is the first
-		 *   argument sent to the exec call.  Will send it
-		 *   anyway cause might be useful.
+		 *   argument sent to the exec call.
+		 * Since this is redundant, we will only provide
+		 *   a1-a3 as the role of this call is to supply
+		 *   exec arguments rather than the whole line.
 		 */
 
 		if ( strcmp(field_name, F_A0) == 0 ) {
@@ -836,22 +844,17 @@ static void process_execv_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 		if ( strcmp(field_name, F_A1) == 0 ) {
 			a1 = (char*)auparse_get_field_str_wrap(_au);
 			t_a1 = encode_string( a1, strlen(a1));
-			//printf("	Processing t_a1: %s\n", t_a1);
 			}
 
 		if ( strcmp(field_name, F_A2) == 0 ) {
 			a2 = (char*)auparse_get_field_str_wrap(_au);
 			t_a2 = encode_string( a2, strlen(a2));
-			//printf("	Processing t_a2: %s\n", t_a2);
 			}
 
 		if ( strcmp(field_name, F_A3) == 0 ) {
 			a3 = (char*)auparse_get_field_str_wrap(_au);
 			t_a3 = encode_string( a3, strlen(a3));
-			//printf("	Processing t_a3: %s\n", t_a3);
 			}
-		//if ( strcmp(field_name, F_ARG) == 0 )
-		//	arg = (char*)auparse_interpret_field_wrap(_au);
 
 		auparse_next_field(_au);
 		}
@@ -896,6 +899,8 @@ static void process_generic_obj(auparse_state_t *_au, int *event_cnt, int num_re
 	char* t_a1 = NULL;
 	char* a2 = "NULL";
 	char* t_a2 = NULL;
+	char* a3 = "NULL";
+	char* t_a3 = NULL;
 	char* pid = "NULL";
 	char* ppid = "NULL";
 	char* success = "NULL";
@@ -983,6 +988,11 @@ static void process_generic_obj(auparse_state_t *_au, int *event_cnt, int num_re
 			t_a2 = encode_string( a2, strlen(a2));
 			}
 
+		if ( strcmp(field_name, F_A3) == 0 ) {
+			a3 = (char*)auparse_get_field_str_wrap(_au);
+			t_a3 = encode_string( a3, strlen(a3));
+			}
+
 		if ( strcmp(field_name, F_PID) == 0 )
 			pid = (char*)auparse_get_field_str_wrap(_au);
 
@@ -1013,7 +1023,7 @@ static void process_generic_obj(auparse_state_t *_au, int *event_cnt, int num_re
 		}
 
 	bzero(msgbuf, sizeof(msgbuf));
-	snprintf(msgbuf, sizeof(msgbuf) - 1, "NERSCAUD %i:%i:%i GENERIC_OBJ %s %u.%u %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses, auid, key, t_comm, t_exe, t_a0, t_a1, t_a2, uid, gid, euid, egid, fsuid, fsgid, suid, sgid, pid, ppid, tty, success, t_xit);
+	snprintf(msgbuf, sizeof(msgbuf) - 1, "NERSCAUD %i:%i:%i GENERIC_OBJ %s %u.%u %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n", *event_cnt, num_records, record_cnt, t_type, (unsigned)e->sec, e->milli, t_node, ses, auid, key, t_comm, t_exe, t_a0, t_a1, t_a2, t_a3, uid, gid, euid, egid, fsuid, fsgid, suid, sgid, pid, ppid, tty, success, t_xit);
 	s_write(msgbuf);
 
 	strncpy(ses_holder,ses,holder_size);
@@ -1025,6 +1035,7 @@ static void process_generic_obj(auparse_state_t *_au, int *event_cnt, int num_re
 	free(t_a0);
 	free(t_a1);
 	free(t_a2);
+	free(t_a3);
 	free(t_xit);
 	free(t_exe);
 
@@ -1438,13 +1449,14 @@ static int handle_inotify_event(struct inotify_event *inev, struct file_struct *
 		new_files[0].name = "/var/log/audit/audit.log";
 		setup_file(&new_files[0]);
 
-	    // Take a sec here to let the new file get
+		// Take a sec here to let the new file get
 		//  set up by the OS - there are problems with this
 		//  asking just a bit too soon.
 		sleep(1);
 		tail_file(new_files, DEFAULT_N_LINES, M_LINES, 1);
 		watch_files(new_files, 1);
 		return 0;
+
 	} else if (inev->mask & IN_UNMOUNT) {
 		fprintf(stderr, "Device containing file '%s' unmounted.\n", f->name);
 	}
@@ -1533,10 +1545,10 @@ int main(int argc, char **argv)
 	unsigned long n_units = DEFAULT_N_LINES;
 	char forever = 0, mode = M_LINES;
 	char **filenames;
-	//struct file_struct *files = NULL;
+	
 	int event_cnt = 1;
 
-  /* Set up logging */
+	/* Set up logging */
 	openlog("AUDITD_BRO", 0, LOG_USER);
 
 	au = auparse_init(AUSOURCE_FEED, 0);
@@ -1628,3 +1640,4 @@ int main(int argc, char **argv)
 
 	return ret;
 }
+
