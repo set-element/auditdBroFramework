@@ -869,6 +869,10 @@ static void process_execv_obj(auparse_state_t *_au, int *event_cnt, int num_reco
 
 	free(t_type);
 	free(t_node);
+	free(t_a0);
+	free(t_a1);
+	free(t_a2);
+	free(t_a3);
 
 	return;
 }
