@@ -1,5 +1,5 @@
 /* Author: Scott Campbell
- *  2017/11/10
+ *  2018/01/25
  *
  * Light weight program to read native linux auditd logs,
  *   translate them into a more portable format and write
@@ -66,6 +66,9 @@
 #define INOTIFY_BUFLEN (4 * sizeof(struct inotify_event))
 
 struct file_struct *files = NULL;
+
+/* inotify fd */
+int ifd = 0;
 
 /* Some additional things for auparse functionality */
 
@@ -1443,6 +1446,12 @@ static int handle_inotify_event(struct inotify_event *inev, struct file_struct *
 		// SCOTT
 		close(f->fd);
 
+		/* without this, the program will leak the inotify descriptor 
+		 *   which would be bad for all sorts of reasons ...
+		 */
+		if ( ifd != 0 )
+			close(ifd);
+
 		free(files);
 		struct file_struct *new_files = NULL;
 		new_files = emalloc( sizeof(struct file_struct) );
@@ -1468,7 +1477,7 @@ ignore:
 
 static int watch_files(struct file_struct *_files, int n_files)
 {
-	int ifd, i;
+	int i;
 	char buf[n_files * INOTIFY_BUFLEN];
 
 	ifd = inotify_init();
